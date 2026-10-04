@@ -1,0 +1,296 @@
+.container {
+  min-height: 100vh;
+  width: 100vw;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: url('https://images.unsplash.com/photo-1683660108214-147c23fe909d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpZXZhbCUyMGZhbnRhc3klMjBnYW1lfGVufDF8fHx8MTc4MDg0NTc0NHww&ixlib=rb-4.1.0&q=80&w=1080');
+  background-size: cover;
+  background-position: center;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 400px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Brand Section */
+.brandWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2.5rem;
+}
+
+.brandIcon {
+  color: var(--color-gold);
+  filter: drop-shadow(0 0 8px rgba(207, 168, 88, 0.6));
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-gold);
+  letter-spacing: 3px;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.subtitle {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-style: italic;
+  color: #cfbc9f; /* A darker parchment color */
+  margin: 0;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Card Wrapper */
+.cardWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.cardBody {
+  background-color: var(--color-parchment);
+  border: 2px solid var(--color-leather-dark);
+  border-radius: 4px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Corner Circles */
+.cornerCircle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: var(--color-parchment);
+  border: 2px solid var(--color-gold);
+  border-radius: 50%;
+  z-index: 3;
+}
+
+.topLeft { top: -6px; left: -6px; }
+.topRight { top: -6px; right: -6px; }
+.bottomLeft { bottom: -6px; left: -6px; }
+.bottomRight { bottom: -6px; right: -6px; }
+
+/* Player View */
+.playerView {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.instructionText {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--color-ink-light);
+  text-align: center;
+  margin: 0 0 2rem 0;
+}
+
+.googleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem;
+  background-color: #ffffff;
+  border: 1px solid var(--color-leather-dark);
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 1px;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 2.5rem;
+}
+
+.googleBtn:hover {
+  background-color: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+}
+
+.googleBtn:active {
+  transform: translateY(0);
+}
+
+.googleIcon {
+  color: var(--color-leather);
+}
+
+.textBtn {
+  background: none;
+  border: none;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  letter-spacing: 1px;
+  color: var(--color-leather);
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: opacity 0.2s;
+}
+
+.textBtn:hover {
+  opacity: 0.7;
+}
+
+/* Admin View */
+.adminView {
+  display: flex;
+  flex-direction: column;
+}
+
+.adminHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.adminIcon {
+  color: var(--color-leather);
+}
+
+.adminHeader h2 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  color: var(--color-leather);
+  margin: 0;
+}
+
+.inputGroup {
+  margin-bottom: 1rem;
+}
+
+.inputGroup label {
+  display: block;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  color: var(--color-ink-light);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+}
+
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  background-color: rgba(104, 76, 61, 0.1); /* leather with opacity */
+  border: 1px solid rgba(104, 76, 61, 0.2);
+  border-radius: 2px;
+  padding: 0 0.75rem;
+}
+
+.inputIcon {
+  color: var(--color-ink-light);
+  opacity: 0.7;
+}
+
+.inputWrapper input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.875rem 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--color-ink);
+  outline: none;
+}
+
+.inputWrapper input::placeholder {
+  color: var(--color-ink-light);
+  opacity: 0.5;
+}
+
+.unsealBtn {
+  width: 100%;
+  padding: 1rem;
+  margin-top: 1.25rem;
+  margin-bottom: 1.5rem;
+  background-color: var(--color-leather);
+  border: 1px solid var(--color-gold-dark);
+  border-radius: 2px;
+  color: var(--color-gold);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: center;
+}
+
+.unsealBtn:hover {
+  background-color: var(--color-leather-dark);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+
+.errorMessage {
+  margin-top: 0.75rem;
+  color: var(--color-ruby);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Spinners */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0,0,0,0.1);
+  border-top-color: var(--color-leather);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinnerGold {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(207, 168, 88, 0.3);
+  border-top-color: var(--color-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

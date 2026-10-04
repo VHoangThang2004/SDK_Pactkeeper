@@ -1,0 +1,249 @@
+.container {
+  padding: 1.5rem;
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.returnBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--color-ink-light);
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 1.5rem;
+  transition: color 0.2s;
+}
+
+.returnBtn:hover {
+  color: var(--color-ink);
+}
+
+.scrollWrapper {
+  position: relative;
+  margin-bottom: 2rem;
+  padding: 0 4px;
+}
+
+.rollerTop, .rollerBottom {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  height: 12px;
+  background-color: var(--color-leather);
+  border-radius: 6px;
+  border-top: 1px solid var(--color-leather-dark);
+  border-bottom: 1px solid var(--color-leather-dark);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  z-index: 2;
+}
+
+.rollerTop {
+  top: -6px;
+}
+
+.rollerBottom {
+  bottom: -6px;
+}
+
+.receiptCard {
+  background-color: var(--color-parchment);
+  border: 2px solid var(--color-leather-dark);
+  padding: 2rem 1.5rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.receiptTitle {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 0.5rem 0;
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--color-ink);
+  opacity: 0.2;
+  margin-bottom: 1.5rem;
+}
+
+.receiptRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid rgba(82, 49, 28, 0.1); /* ink with opacity */
+  padding-bottom: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--color-ink-light);
+}
+
+.value {
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.inclusions {
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.inclusionsTitle {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-ruby);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.totalBox {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: rgba(104, 76, 61, 0.05); /* leather with opacity */
+  border: 1px solid rgba(104, 76, 61, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.totalLabel {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.totalValue {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-ruby);
+}
+
+.sectionTitle {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.methodsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.methodCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--color-parchment);
+  border: 2px solid rgba(104, 76, 61, 0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.methodCard.selected {
+  background-color: rgba(212, 175, 55, 0.1); /* gold with opacity */
+  border-color: var(--color-gold);
+}
+
+.methodInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.methodIcon {
+  color: var(--color-ink-light);
+}
+
+.methodCard.selected .methodIcon {
+  color: var(--color-gold-dark);
+}
+
+.methodName {
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-ink-light);
+}
+
+.methodCard.selected .methodName {
+  color: var(--color-ink);
+}
+
+.radioCircle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(82, 49, 28, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.methodCard.selected .radioCircle {
+  border-color: var(--color-gold);
+  background-color: var(--color-gold);
+}
+
+.checkIcon {
+  color: white;
+}
+
+.sealBtn {
+  width: 100%;
+  padding: 1.25rem;
+  font-size: 1.125rem;
+  background-color: var(--color-ruby);
+}
+
+.sealBtn:hover {
+  background-color: #8c1e1e; /* darker ruby */
+}
+
+.successMessage {
+  background-color: rgba(34, 139, 34, 0.1);
+  color: #1e7a1e;
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-weight: bold;
+  text-align: center;
+  border: 1px solid #1e7a1e;
+  margin-bottom: 1.5rem;
+}
+
+.disclaimer {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--color-ink-light);
+  text-align: center;
+  margin-top: 1.5rem;
+  opacity: 0.7;
+}

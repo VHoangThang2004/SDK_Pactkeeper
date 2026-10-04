@@ -1,0 +1,125 @@
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.headerIcon {
+  color: var(--color-ink-light);
+}
+
+.headerTitle {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.ledgerContainer {
+  background-color: var(--color-parchment);
+  border: 1.5px solid var(--color-leather-dark);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.tableHeader {
+  background-color: var(--color-leather-dark);
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.tableHeader div {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-parchment);
+}
+
+.colDate {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.colTithe {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.colAcquired {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.tableRow {
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.evenRow {
+  background-color: transparent;
+}
+
+.oddRow {
+  background-color: rgba(0,0,0,0.05);
+}
+
+.dateText {
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin-bottom: 2px;
+}
+
+.idText {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--color-ink-light);
+}
+
+.amountText {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin-bottom: 2px;
+}
+
+.statusText {
+  font-family: var(--font-heading);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.acquiredGems {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-gold-dark);
+}
+
+.acquiredIcon {
+  color: var(--color-gold-dark);
+}
+
+.emptyState {
+  padding: 2.5rem;
+  text-align: center;
+  font-family: var(--font-body);
+  font-style: italic;
+  color: var(--color-ink-light);
+}

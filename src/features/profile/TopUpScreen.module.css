@@ -1,0 +1,294 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Player Card */
+.playerCard {
+  background: linear-gradient(to bottom right, var(--color-leather), var(--color-leather-dark));
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.45);
+  position: relative;
+  overflow: hidden;
+}
+
+.watermark {
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  opacity: 0.1;
+  color: var(--color-gold);
+}
+
+.cardContent {
+  padding: 1rem;
+  border: 1px solid rgba(207, 168, 88, 0.3);
+  margin: 2px;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.infoCol {
+  flex: 1;
+}
+
+.heroLabel {
+  font-family: var(--font-heading);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--color-parchment-dark);
+  letter-spacing: 1.5px;
+}
+
+.username {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-gold);
+  margin: 0.15rem 0 0.4rem;
+}
+
+.levelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.levelBadge {
+  background-color: rgba(138, 31, 31, 0.8);
+  border: 1px solid var(--color-ruby);
+  color: var(--color-parchment);
+  font-family: var(--font-heading);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+}
+
+.xpText {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--color-parchment-dark);
+}
+
+.xpBarContainer {
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.xpBarFill {
+  height: 100%;
+  background-color: var(--color-gold);
+}
+
+.avatarCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.avatarWrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--color-gold);
+  background-color: var(--color-parchment);
+  overflow: hidden;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-ruby);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0;
+}
+
+.wealthContainer {
+  background-color: rgba(0,0,0,0.4);
+  border: 1px solid rgba(207, 168, 88, 0.2);
+  padding: 0.75rem;
+}
+
+.wealthLabel {
+  font-family: var(--font-heading);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--color-parchment-dark);
+  letter-spacing: 1.5px;
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.wealthValue {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.gemIcon {
+  color: var(--color-gold);
+}
+
+/* Section Title */
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  position: relative;
+  justify-content: center;
+}
+
+.dividerLeft, .dividerRight {
+  flex: 1;
+  height: 1px;
+}
+
+.dividerLeft {
+  background: linear-gradient(to right, transparent, var(--color-ink-light));
+}
+
+.dividerRight {
+  background: linear-gradient(to left, transparent, var(--color-ink-light));
+}
+
+.titleContent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+}
+
+.titleContent h3 {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.titleIcon {
+  color: var(--color-ink-light);
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.packWrapper {
+  position: relative;
+}
+
+.packCard {
+  background-color: var(--color-parchment);
+  border: 2px solid rgba(82, 49, 28, 0.2);
+  padding: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  cursor: pointer;
+  height: 100%;
+}
+
+.packInner {
+  background-color: rgba(255,255,255,0.4);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.packIconWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1px solid rgba(207, 168, 88, 0.5);
+  background: linear-gradient(to bottom, rgba(82, 49, 28, 0.05), rgba(82, 49, 28, 0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.packGem {
+  color: var(--color-gold);
+}
+
+.packAmount {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin-bottom: 0.25rem;
+}
+
+.packGemSmall {
+  color: var(--color-gold-dark);
+}
+
+.packName {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--color-ink-light);
+  text-align: center;
+  margin-bottom: 0.5rem;
+  flex: 1;
+}
+
+.priceBtn {
+  width: 100%;
+  padding: 0.4rem;
+  background-color: var(--color-leather);
+  border: 1px solid var(--color-leather-dark);
+  color: var(--color-gold);
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.bestValueBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background-color: var(--color-ruby);
+  border: 1px solid var(--color-gold);
+  color: var(--color-gold);
+  padding: 0.25rem 0.5rem;
+  font-family: var(--font-heading);
+  font-size: 0.6rem;
+  font-weight: 700;
+  transform: rotate(12deg);
+  box-shadow: 2px 2px 4px rgba(0,0,0,0.25);
+  z-index: 10;
+}
