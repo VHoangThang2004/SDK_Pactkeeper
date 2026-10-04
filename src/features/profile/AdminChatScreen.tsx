@@ -2,57 +2,99 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Paperclip, Send } from 'lucide-react';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
-import { useAuthStore } from '../../store/authStore';
+import { apiClient } from '../../core/network/apiClient';
+import { supportHubService } from '../support/services/SupportHubService';
 import styles from './AdminChatScreen.module.css';
 import chatStyles from '../support/SupportChat.module.css'; // Reuse chat styles
 
 interface Message {
   id: string;
   content: string;
-  senderId: string;
-  senderRole: string;
+  sender: string;
+  senderName: string;
   timestamp: string;
   imageUrl?: string;
+  text?: string;
+  attachmentUrl?: string;
+  createdAt?: string;
 }
 
 export const AdminChatScreen: React.FC = () => {
   const { playerId } = useParams<{ playerId: string }>();
   const navigate = useNavigate();
-  const { role } = useAuthStore();
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // In a real app, fetch messages for this playerId
-    const mockMessages: Message[] = [
-      { id: '1', content: 'I lost my gems', senderId: playerId!, senderRole: 'User', timestamp: new Date(Date.now() - 300000).toISOString() },
-    ];
-    setMessages(mockMessages);
+    if (!playerId) return;
+
+    const initChat = async () => {
+      try {
+        const response = await apiClient.get<Message[]>(`/api/support/admin/chat/${playerId}`);
+        setMessages(response.data);
+        
+        await supportHubService.connect();
+        supportHubService.onMessageReceived((msg) => {
+          // Verify message belongs to this thread if needed, but typically it will.
+          setMessages((prev) => [...prev, msg]);
+        });
+      } catch (error) {
+        console.error('Failed to load chat', error);
+      }
+    };
+    initChat();
+
+    return () => {
+      supportHubService.disconnect();
+    };
   }, [playerId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = (e?: React.FormEvent) => {
+  const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || !playerId) return;
 
-    const newMsg: Message = {
-      id: Date.now().toString(),
-      content: inputText,
-      senderId: 'admin1',
-      senderRole: 'Admin',
-      timestamp: new Date().toISOString()
-    };
+    try {
+      await apiClient.post(`/api/support/admin/chat/${playerId}`, {
+        text: inputText,
+        attachmentUrl: '' // Add upload logic later if needed
+      });
+      setInputText('');
+    } catch (error) {
+      console.error('Failed to send message', error);
+    }
+  };
 
-    setMessages([...messages, newMsg]);
-    setInputText('');
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !playerId) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const uploadRes = await apiClient.post('/api/support/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      await apiClient.post(`/api/support/admin/chat/${playerId}`, {
+        text: '',
+        attachmentUrl: uploadRes.data.url
+      });
+    } catch (error) {
+      console.error('Image upload failed', error);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const formatTime = (isoString: string) => {
@@ -89,22 +131,23 @@ export const AdminChatScreen: React.FC = () => {
             <div className={chatStyles.emptyState}>The conversation is currently empty.</div>
           ) : (
             messages.map((msg) => {
-              const isSelf = msg.senderRole === role;
+              // The backend returns msg.sender as 'admin' or 'user'
+              const isSelf = msg.sender === 'admin';
               
               return (
                 <div key={msg.id} className={`${chatStyles.messageWrapper} ${isSelf ? chatStyles.self : chatStyles.other}`}>
                   <div className={chatStyles.messageContent}>
                     <div className={chatStyles.messageBubble}>
-                      {msg.content && <p>{msg.content}</p>}
-                      {msg.imageUrl && (
+                      {msg.text && <p>{msg.text}</p>}
+                      {msg.attachmentUrl && (
                         <img 
-                          src={msg.imageUrl} 
+                          src={msg.attachmentUrl} 
                           alt="Attachment" 
                           className={chatStyles.imageAttachment} 
                         />
                       )}
                     </div>
-                    <span className={chatStyles.timestamp}>{formatTime(msg.timestamp)}</span>
+                    <span className={chatStyles.timestamp}>{formatTime(msg.createdAt || new Date().toISOString())}</span>
                   </div>
                 </div>
               );
@@ -126,6 +169,7 @@ export const AdminChatScreen: React.FC = () => {
               accept="image/*" 
               style={{ display: 'none' }} 
               ref={fileInputRef}
+              onChange={handleFileUpload}
             />
             
             <button 

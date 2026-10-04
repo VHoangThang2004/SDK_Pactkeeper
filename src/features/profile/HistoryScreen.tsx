@@ -3,6 +3,8 @@ import { ScrollText, ArrowDown } from 'lucide-react';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import styles from './HistoryScreen.module.css';
 
+import { apiClient } from '../../core/network/apiClient';
+
 interface PaymentHistory {
   orderCode: string;
   amount: number;
@@ -11,17 +13,23 @@ interface PaymentHistory {
   createdAt: string;
 }
 
-const mockHistory: PaymentHistory[] = [
-  { orderCode: '102938', amount: 129000, gemsAmount: 600, status: 'CONFIRMED', createdAt: new Date().toISOString() },
-  { orderCode: '102937', amount: 22000, gemsAmount: 100, status: 'CANCELLED', createdAt: new Date(Date.now() - 86400000).toISOString() },
-  { orderCode: '102936', amount: 299000, gemsAmount: 1500, status: 'PENDING', createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { orderCode: '102935', amount: 699000, gemsAmount: 3500, status: 'CONFIRMED', createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-];
-
 export const HistoryScreen: React.FC = () => {
-  const [history] = useState<PaymentHistory[]>(mockHistory);
+  const [history, setHistory] = useState<PaymentHistory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // In a real app, fetch from API
+  React.useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await apiClient.get<PaymentHistory[]>('/api/payment/history');
+        setHistory(response.data);
+      } catch (err) {
+        console.error('Error fetching history:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
 
   const formatDate = (dateString: string) => {
     const dt = new Date(dateString);
@@ -65,7 +73,9 @@ export const HistoryScreen: React.FC = () => {
 
         {/* Table Body */}
         <div className={styles.tableBody}>
-          {history.length === 0 ? (
+          {isLoading ? (
+            <div className={styles.emptyState}>Loading ledger...</div>
+          ) : history.length === 0 ? (
             <div className={styles.emptyState}>No entries found in the treasury ledger.</div>
           ) : (
             history.map((txn, index) => {
