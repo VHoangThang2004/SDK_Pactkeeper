@@ -4,7 +4,7 @@ import { StorageService } from '../../../core/services/storageService';
 
 export class SupportHubService {
   private hubConnection: signalR.HubConnection | null = null;
-  private onMessageReceivedCallback: ((message: any) => void) | null = null;
+  private onMessageReceivedCallback: ((playerId: string, message: any) => void) | null = null;
 
   public async connect(): Promise<void> {
     const token = StorageService.getToken();
@@ -18,9 +18,9 @@ export class SupportHubService {
       .withAutomaticReconnect()
       .build();
 
-    this.hubConnection.on('ReceiveMessage', (message: any) => {
+    this.hubConnection.on('ReceiveMessage', (playerId: string, message: any) => {
       if (this.onMessageReceivedCallback) {
-        this.onMessageReceivedCallback(message);
+        this.onMessageReceivedCallback(playerId, message);
       }
     });
 
@@ -32,16 +32,8 @@ export class SupportHubService {
     }
   }
 
-  public onMessageReceived(callback: (message: any) => void) {
+  public onMessageReceived(callback: (playerId: string, message: any) => void) {
     this.onMessageReceivedCallback = callback;
-  }
-
-  public async sendMessage(content: string, threadId: string): Promise<void> {
-    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
-      await this.hubConnection.invoke('SendMessageToThread', threadId, content);
-    } else {
-      console.error('Cannot send message, SignalR not connected');
-    }
   }
 
   public async disconnect(): Promise<void> {

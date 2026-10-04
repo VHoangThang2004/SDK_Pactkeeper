@@ -9,14 +9,11 @@ import chatStyles from '../support/SupportChat.module.css'; // Reuse chat styles
 
 interface Message {
   id: string;
-  content: string;
   sender: string;
   senderName: string;
-  timestamp: string;
-  imageUrl?: string;
-  text?: string;
-  attachmentUrl?: string;
-  createdAt?: string;
+  text: string;
+  attachmentUrl: string;
+  createdAt: string;
 }
 
 export const AdminChatScreen: React.FC = () => {
@@ -36,12 +33,16 @@ export const AdminChatScreen: React.FC = () => {
     const initChat = async () => {
       try {
         const response = await apiClient.get<Message[]>(`/api/support/admin/chat/${playerId}`);
-        setMessages(response.data);
+        setMessages(response.data || []);
         
         await supportHubService.connect();
-        supportHubService.onMessageReceived((msg) => {
-          // Verify message belongs to this thread if needed, but typically it will.
-          setMessages((prev) => [...prev, msg]);
+        supportHubService.onMessageReceived((receivedPlayerId, msg) => {
+          if (receivedPlayerId === playerId) {
+            setMessages((prev) => {
+              if (prev.some(m => m.id === msg.id)) return prev;
+              return [...prev, msg];
+            });
+          }
         });
       } catch (error) {
         console.error('Failed to load chat', error);
@@ -62,12 +63,19 @@ export const AdminChatScreen: React.FC = () => {
     e?.preventDefault();
     if (!inputText.trim() || !playerId) return;
 
+    const textToSend = inputText;
+    setInputText('');
+
     try {
-      await apiClient.post(`/api/support/admin/chat/${playerId}`, {
-        text: inputText,
-        attachmentUrl: '' // Add upload logic later if needed
+      const response = await apiClient.post(`/api/support/admin/chat/${playerId}`, {
+        text: textToSend,
+        attachmentUrl: ''
       });
-      setInputText('');
+      const sentMsg = response.data;
+      setMessages((prev) => {
+        if (prev.some(m => m.id === sentMsg.id)) return prev;
+        return [...prev, sentMsg];
+      });
     } catch (error) {
       console.error('Failed to send message', error);
     }
@@ -85,9 +93,16 @@ export const AdminChatScreen: React.FC = () => {
       const uploadRes = await apiClient.post('/api/support/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      await apiClient.post(`/api/support/admin/chat/${playerId}`, {
+      const imageUrl = uploadRes.data.url;
+      
+      const response = await apiClient.post(`/api/support/admin/chat/${playerId}`, {
         text: '',
-        attachmentUrl: uploadRes.data.url
+        attachmentUrl: imageUrl
+      });
+      const sentMsg = response.data;
+      setMessages((prev) => {
+        if (prev.some(m => m.id === sentMsg.id)) return prev;
+        return [...prev, sentMsg];
       });
     } catch (error) {
       console.error('Image upload failed', error);
@@ -131,7 +146,6 @@ export const AdminChatScreen: React.FC = () => {
             <div className={chatStyles.emptyState}>The conversation is currently empty.</div>
           ) : (
             messages.map((msg) => {
-              // The backend returns msg.sender as 'admin' or 'user'
               const isSelf = msg.sender === 'admin';
               
               return (
@@ -147,7 +161,7 @@ export const AdminChatScreen: React.FC = () => {
                         />
                       )}
                     </div>
-                    <span className={chatStyles.timestamp}>{formatTime(msg.createdAt || new Date().toISOString())}</span>
+                    <span className={chatStyles.timestamp}>{formatTime(msg.createdAt)}</span>
                   </div>
                 </div>
               );
