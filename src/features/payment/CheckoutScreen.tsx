@@ -55,7 +55,11 @@ export const CheckoutScreen: React.FC = () => {
     setSuccessMessage(null);
     
     try {
-      const response = await apiClient.post('/api/payment/create-order', { packId: pack.id });
+      const response = await apiClient.post('/api/payment/create-order', { 
+        packId: pack.id,
+        returnUrl: `${window.location.origin}/profile/history`,
+        cancelUrl: `${window.location.origin}/profile/history`
+      });
       if (response.data && response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
       } else {
