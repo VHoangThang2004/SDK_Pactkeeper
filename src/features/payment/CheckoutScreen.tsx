@@ -100,7 +100,7 @@ export const CheckoutScreen: React.FC = () => {
             </div>
 
             {/* Inclusions (mock logic, if any) */}
-            {(pack.resolvedUnitNames?.length || pack.resolvedWeaponNames?.length) ? (
+            {(pack.resolvedUnitNames?.length || pack.resolvedWeaponNames?.length || pack.resolvedTrinketNames?.length) ? (
               <div className={styles.inclusions}>
                 <h3 className={styles.inclusionsTitle}>Granted Inclusions:</h3>
                 {pack.resolvedUnitNames?.map((n, i) => (
@@ -112,6 +112,12 @@ export const CheckoutScreen: React.FC = () => {
                 {pack.resolvedWeaponNames?.map((n, i) => (
                   <div className={styles.receiptRow} key={`wpn-${i}`}>
                     <span className={styles.label}>Weapon Granted</span>
+                    <span className={styles.value}>{n}</span>
+                  </div>
+                ))}
+                {pack.resolvedTrinketNames?.map((n, i) => (
+                  <div className={styles.receiptRow} key={`trk-${i}`}>
+                    <span className={styles.label}>Trinket Granted</span>
                     <span className={styles.value}>{n}</span>
                   </div>
                 ))}
