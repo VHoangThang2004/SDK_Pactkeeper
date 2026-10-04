@@ -31,12 +31,12 @@ export class AuthService {
         throw new Error(e.response.data);
       }
       if (e.response?.status === 401) {
-        throw new Error('True Name hoặc Secret Word không chính xác');
+        throw new Error('Invalid True Name or Secret Word');
       }
       if (e.response?.status === 403) {
-        throw new Error('Tài khoản không có quyền truy cập');
+        throw new Error('Account does not have access permission');
       }
-      throw new Error('Lỗi kết nối Server! Vui lòng thử lại');
+      throw new Error('Server connection error! Please try again');
     }
   }
 
@@ -54,7 +54,7 @@ export class AuthService {
       if (e.response?.data?.message) {
         throw new Error(e.response.data.message);
       }
-      throw new Error('Lỗi kết nối Server khi đăng nhập Google!');
+      throw new Error('Server connection error during Google login!');
     }
   }
 
