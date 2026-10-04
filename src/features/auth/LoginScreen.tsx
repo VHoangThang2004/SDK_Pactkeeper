@@ -55,6 +55,9 @@ export const LoginScreen: React.FC = () => {
     setError(null);
     try {
       const response = await AuthService.loginWithGoogle(idToken);
+      if (!response.token) {
+        throw new Error('Authentication token not received from server');
+      }
       login(response.token, response.username, response.playerId, response.role);
     } catch (err: any) {
       setError(err.message || 'Google login error');
