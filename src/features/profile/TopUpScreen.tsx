@@ -22,6 +22,9 @@ interface TopUpPack {
   unitDefinitionIds?: number[];
   weaponDefinitionIds?: number[];
   trinketDefinitionIds?: number[];
+  unitNames?: string[];
+  weaponNames?: string[];
+  trinketNames?: string[];
   resolvedUnitNames?: string[];
   resolvedWeaponNames?: string[];
   resolvedTrinketNames?: string[];
@@ -41,44 +44,76 @@ const STATIC_TRINKETS: Record<number, string> = {
   1: "High heels", 2: "Monocle", 3: "Strong boots", 4: "Spyglass",
 };
 
+const DEFAULT_PACKS: TopUpPack[] = [
+  { id: '1', name: 'Handful of Gems', gemsAmount: 100, priceVnd: 22000 },
+  { id: '2', name: 'Pouch of Gems', gemsAmount: 300, priceVnd: 66000 },
+  { id: '3', name: 'Chest of Gems', gemsAmount: 600, priceVnd: 129000 },
+  { id: '4', name: 'Hoard of Gems', gemsAmount: 1500, priceVnd: 299000 },
+  { id: '5', name: "Dragon's Treasure", gemsAmount: 3500, priceVnd: 699000 },
+  { id: '6', name: "Kingdom's Wealth", gemsAmount: 8000, priceVnd: 1499000 },
+];
+
 export const TopUpScreen: React.FC = () => {
-  const { logout } = useAuthStore();
+  const { username, logout } = useAuthStore();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<PlayerProfile | null>(null);
-  const [packs, setPacks] = useState<TopUpPack[]>([]);
+  const [profile, setProfile] = useState<PlayerProfile>({
+    username: username || 'Hero',
+    level: 1,
+    experience: 0,
+    gems: 0,
+  });
+  const [packs, setPacks] = useState<TopUpPack[]>(DEFAULT_PACKS);
   const [isLoading, setIsLoading] = useState(true);
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileRes, packsRes] = await Promise.all([
+        const [profileResult, packsResult] = await Promise.allSettled([
           apiClient.get<PlayerProfile>('/api/PlayerProfile'),
           apiClient.get<TopUpPack[]>('/api/topuppack')
         ]);
-        
-        // Resolve names for inclusions
-        const resolvedPacks = (packsRes.data || []).map(pack => ({
-          ...pack,
-          resolvedUnitNames: (pack.unitDefinitionIds || []).map(id => STATIC_UNITS[id] || `Hero #${id}`),
-          resolvedWeaponNames: (pack.weaponDefinitionIds || []).map(id => STATIC_WEAPONS[id] || `Weapon #${id}`),
-          resolvedTrinketNames: (pack.trinketDefinitionIds || []).map(id => STATIC_TRINKETS[id] || `Trinket #${id}`),
-        }));
 
-        setProfile(profileRes.data);
-        setPacks(resolvedPacks);
+        if (profileResult.status === 'fulfilled' && profileResult.value?.data) {
+          const raw = profileResult.value.data;
+          setProfile({
+            username: raw.username || username || 'Hero',
+            level: raw.level ?? 1,
+            experience: raw.experience ?? 0,
+            gems: raw.gems ?? 0,
+          });
+        }
+
+        if (packsResult.status === 'fulfilled' && packsResult.value?.data && packsResult.value.data.length > 0) {
+          const fetchedPacks = packsResult.value.data;
+          const resolvedPacks = fetchedPacks.map(pack => ({
+            ...pack,
+            resolvedUnitNames: pack.unitNames && pack.unitNames.length > 0
+              ? pack.unitNames
+              : (pack.unitDefinitionIds || []).map(id => STATIC_UNITS[id] || `Hero #${id}`),
+            resolvedWeaponNames: pack.weaponNames && pack.weaponNames.length > 0
+              ? pack.weaponNames
+              : (pack.weaponDefinitionIds || []).map(id => STATIC_WEAPONS[id] || `Weapon #${id}`),
+            resolvedTrinketNames: pack.trinketNames && pack.trinketNames.length > 0
+              ? pack.trinketNames
+              : (pack.trinketDefinitionIds || []).map(id => STATIC_TRINKETS[id] || `Trinket #${id}`),
+          }));
+          setPacks(resolvedPacks);
+        }
       } catch (err) {
-        console.error('Error fetching data:', err);
+        console.error('Error fetching data in TopUpScreen:', err);
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [username]);
 
-  if (isLoading || !profile) {
+  if (isLoading) {
     return (
       <ParchmentBackground padding="1rem">
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>Loading...</div>
+        <div style={{ textAlign: 'center', marginTop: '2rem', fontStyle: 'italic', color: 'var(--color-ink-muted)' }}>
+          Loading Treasury...
+        </div>
       </ParchmentBackground>
     );
   }

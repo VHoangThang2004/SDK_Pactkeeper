@@ -42,19 +42,29 @@ export class AuthService {
 
   static async loginWithGoogle(idToken: string): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<AuthResponse>('/api/auth/google', {
+      const response = await apiClient.post<any>('/api/auth/google', {
+        idToken,
         IdToken: idToken,
       });
 
       if (response.status === 200 && response.data) {
-        return response.data;
+        const d = response.data;
+        return {
+          token: d.token || d.Token || '',
+          username: d.username || d.Username || '',
+          playerId: d.playerId || d.PlayerId || '',
+          role: d.role || d.Role || 'Player',
+        };
       }
       throw new Error('Invalid response from server');
     } catch (e: any) {
       if (e.response?.data?.message) {
         throw new Error(e.response.data.message);
       }
-      throw new Error('Server connection error during Google login!');
+      if (e.response?.data?.error) {
+        throw new Error(e.response.data.error);
+      }
+      throw new Error(e.message || 'Server connection error during Google login!');
     }
   }
 
