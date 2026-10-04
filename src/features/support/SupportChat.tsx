@@ -3,7 +3,7 @@ import { supportHubService } from './services/SupportHubService';
 import { apiClient } from '../../core/network/apiClient';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import styles from './SupportChat.module.css';
-import { Send, Paperclip } from 'lucide-react';
+import { Send, Paperclip, Bot } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -115,6 +115,17 @@ export const SupportChat: React.FC = () => {
   return (
     <ParchmentBackground padding="0">
       <div className={styles.chatContainer}>
+        {/* Bot Header */}
+        <div className={styles.botHeader}>
+          <div className={styles.botAvatar}>
+            <Bot size={24} className={styles.botIcon} />
+          </div>
+          <div className={styles.botInfo}>
+            <span className={styles.botTitle}>Keeper of Records</span>
+            <span className={styles.botSub}>Usually replies before the hourglass empties</span>
+          </div>
+        </div>
+
         {/* Messages List */}
         <div className={styles.messageList}>
           {messages.length === 0 ? (

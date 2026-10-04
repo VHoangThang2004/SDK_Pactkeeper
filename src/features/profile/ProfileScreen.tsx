@@ -3,9 +3,11 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { LayoutWrapper } from '../../components/LayoutWrapper/LayoutWrapper';
 import { ScrollHeader } from '../../components/ScrollHeader/ScrollHeader';
 import { BottomNav } from '../../components/BottomNav/BottomNav';
+import { useAuthStore } from '../../store/authStore';
 
 export const ProfileScreen: React.FC = () => {
   const location = useLocation();
+  const { role } = useAuthStore();
 
   const getPageTitle = () => {
     switch (location.pathname) {
@@ -20,6 +22,10 @@ export const ProfileScreen: React.FC = () => {
       case '/profile/admin-dashboard':
         return "Keeper's Archives";
       default:
+        // handle admin chat title which is dynamic
+        if (location.pathname.startsWith('/profile/admin-chat/')) {
+          return "Keeper's Archives";
+        }
         return 'Pactkeeper';
     }
   };
@@ -30,7 +36,7 @@ export const ProfileScreen: React.FC = () => {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <Outlet />
       </div>
-      <BottomNav />
+      {role !== 'Admin' && <BottomNav />}
     </LayoutWrapper>
   );
 };
