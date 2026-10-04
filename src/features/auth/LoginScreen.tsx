@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
-import { BookOpen, Globe, ShieldAlert, User, KeyRound } from 'lucide-react';
-import { useGoogleLogin } from '@react-oauth/google';
+import { BookOpen, ShieldAlert, User, KeyRound } from 'lucide-react';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthService } from './services/authService';
 import styles from './LoginScreen.module.css';
 
@@ -17,19 +17,19 @@ export const LoginScreen: React.FC = () => {
   const handleNormalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username) {
-      setError('Vui lòng nhập True Name (tên tài khoản)');
+      setError('Please enter True Name (username)');
       return;
     }
     if (username.length < 3) {
-      setError('True Name phải chứa ít nhất 3 ký tự');
+      setError('True Name must contain at least 3 characters');
       return;
     }
     if (!password) {
-      setError('Vui lòng nhập Secret Word (mật khẩu)');
+      setError('Please enter Secret Word (password)');
       return;
     }
     if (password.length < 4) {
-      setError('Secret Word phải chứa ít nhất 4 ký tự');
+      setError('Secret Word must contain at least 4 characters');
       return;
     }
 
@@ -46,32 +46,22 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  const loginWithGoogleMutation = async (tokenResponse: any) => {
+  const loginWithGoogleMutation = async (idToken: string | undefined) => {
+    if (!idToken) {
+      setError('Error: Did not receive token from Google');
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
-      // access_token is typically what implicit flow returns, but we might need id_token depending on backend.
-      // Usually useGoogleLogin provides access_token. Let's send it to backend. 
-      // Wait, if backend expects id_token, we should use the credential response from GoogleLogin component, 
-      // but if we use useGoogleLogin flow='implicit', it returns access_token.
-      // Let's assume the backend GoogleAuthService checks token. 
-      // The mobile app uses GoogleSignIn which provides idToken.
-      // So we MUST use flow: 'auth-code' or just use the google hook correctly.
-      // We will send tokenResponse.access_token to the backend for now, as that's what useGoogleLogin provides by default.
-      
-      const response = await AuthService.loginWithGoogle(tokenResponse.access_token);
+      const response = await AuthService.loginWithGoogle(idToken);
       login(response.token, response.username, response.playerId, response.role);
     } catch (err: any) {
-      setError(err.message || 'Lỗi đăng nhập Google');
+      setError(err.message || 'Google login error');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: loginWithGoogleMutation,
-    onError: () => setError('Đăng nhập Google bị hủy hoặc có lỗi'),
-  });
 
   return (
     <div className={styles.container}>
@@ -96,20 +86,18 @@ export const LoginScreen: React.FC = () => {
                   Invoke your power and enter the realm
                 </p>
                 
-                <button 
-                  className={styles.googleBtn} 
-                  onClick={() => handleGoogleLogin()}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className={styles.spinner} />
-                  ) : (
-                    <>
-                      <Globe size={20} className={styles.googleIcon} />
-                      <span>PACT WITH GOOGLE</span>
-                    </>
-                  )}
-                </button>
+                <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+                  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
+                    <GoogleLogin 
+                      onSuccess={(credentialResponse) => loginWithGoogleMutation(credentialResponse.credential)}
+                      onError={() => setError('Google login was cancelled or failed')}
+                      useOneTap
+                      theme="filled_black"
+                      text="signin_with"
+                      shape="pill"
+                    />
+                  </GoogleOAuthProvider>
+                </div>
 
                 {error && <div className={styles.errorMessage} style={{marginTop: '1rem', textAlign: 'center'}}>{error}</div>}
 
