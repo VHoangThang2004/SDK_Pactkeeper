@@ -111,6 +111,8 @@ export const LoginScreen: React.FC = () => {
                   )}
                 </button>
 
+                {error && <div className={styles.errorMessage} style={{marginTop: '1rem', textAlign: 'center'}}>{error}</div>}
+
                 <button 
                   className={styles.textBtn} 
                   onClick={() => {
