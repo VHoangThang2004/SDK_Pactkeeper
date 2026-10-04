@@ -90,7 +90,7 @@ export const LoginScreen: React.FC = () => {
                 </p>
                 
                 <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
-                  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
+                  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || '978068800706-gr8nfa4iq66m4e6njggntupslphdar10.apps.googleusercontent.com'}>
                     <GoogleLogin 
                       onSuccess={(credentialResponse) => loginWithGoogleMutation(credentialResponse.credential)}
                       onError={() => setError('Google login was cancelled or failed')}
