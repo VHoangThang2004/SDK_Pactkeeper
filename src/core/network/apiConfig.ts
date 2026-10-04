@@ -1,3 +1,4 @@
 export const ApiConfig = {
-  baseUrl: '', // Dùng relative path để Vercel Proxy tự động chuyển tiếp tới HTTP Backend
+  // Lấy URL từ file .env (giống cách Mobile dùng config.backendUrl)
+  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5276',
 };
