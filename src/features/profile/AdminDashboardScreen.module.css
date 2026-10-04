@@ -1,0 +1,117 @@
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-ruby);
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+}
+
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.emptyState {
+  text-align: center;
+  font-family: var(--font-body);
+  font-style: italic;
+  color: var(--color-ink-light);
+  padding: 2rem;
+}
+
+.playerCard {
+  background-color: var(--color-parchment);
+  border: 1px solid var(--color-leather);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.playerCard:hover {
+  background-color: rgba(255,255,255,0.3);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+
+.avatarWrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--color-gold);
+  background-color: var(--color-parchment-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatarIcon {
+  color: var(--color-leather);
+}
+
+.cardContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.playerName {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.timeText {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  color: var(--color-ink-light);
+}
+
+.bottomRow {
+  display: flex;
+}
+
+.messageText {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--color-ink-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.chevron {
+  color: var(--color-ink-light);
+}
