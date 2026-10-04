@@ -9,6 +9,7 @@ import { SupportChat } from './features/support/SupportChat';
 import { AdminDashboardScreen } from './features/profile/AdminDashboardScreen';
 import { AdminChatScreen } from './features/profile/AdminChatScreen';
 import { CheckoutScreen } from './features/payment/CheckoutScreen';
+import { PaymentResultScreen } from './features/payment/PaymentResultScreen';
 
 function App() {
   const { isLoggedIn, role } = useAuthStore();
@@ -16,6 +17,10 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public payment routes (for mobile browser redirects) */}
+        <Route path="/payment/success" element={<PaymentResultScreen isSuccess={true} />} />
+        <Route path="/payment/cancel" element={<PaymentResultScreen isSuccess={false} />} />
+
         {!isLoggedIn ? (
           <>
             <Route path="/login" element={<LoginScreen />} />

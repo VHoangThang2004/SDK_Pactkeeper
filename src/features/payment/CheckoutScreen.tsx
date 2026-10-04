@@ -57,8 +57,8 @@ export const CheckoutScreen: React.FC = () => {
     try {
       const response = await apiClient.post('/api/payment/create-order', { 
         packId: pack.id,
-        returnUrl: `${window.location.origin}/profile/history`,
-        cancelUrl: `${window.location.origin}/profile/history`
+        returnUrl: `${window.location.origin}/payment/success`,
+        cancelUrl: `${window.location.origin}/payment/cancel`
       });
       if (response.data && response.data.checkoutUrl) {
         window.location.href = response.data.checkoutUrl;
