@@ -22,7 +22,7 @@ export const AdminChatScreen: React.FC = () => {
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
