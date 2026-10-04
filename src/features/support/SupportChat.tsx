@@ -4,38 +4,35 @@ import { apiClient } from '../../core/network/apiClient';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import styles from './SupportChat.module.css';
 import { Send, Paperclip } from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
 
 interface Message {
   id: string;
-  content: string;
-  senderId: string;
-  senderRole: string;
-  timestamp: string;
-  imageUrl?: string;
+  sender: string;
+  senderName: string;
+  text: string;
+  attachmentUrl: string;
+  createdAt: string;
 }
 
 export const SupportChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [threadId, setThreadId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { role } = useAuthStore();
 
   useEffect(() => {
-    // 1. Fetch thread ID (Assuming API provides active thread)
     const initChat = async () => {
       try {
-        const response = await apiClient.get('/api/Support/my-thread');
-        setThreadId(response.data.id);
-        setMessages(response.data.messages || []);
+        const response = await apiClient.get('/api/support/chat');
+        setMessages(response.data || []);
         
-        // 2. Connect SignalR
         await supportHubService.connect();
-        supportHubService.onMessageReceived((msg) => {
-          setMessages((prev) => [...prev, msg]);
+        supportHubService.onMessageReceived((_playerId, msg) => {
+          setMessages((prev) => {
+            if (prev.some(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
         });
       } catch (error) {
         console.error('Failed to init chat', error);
@@ -54,26 +51,49 @@ export const SupportChat: React.FC = () => {
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!inputText.trim() || !threadId) return;
+    if (!inputText.trim()) return;
 
-    await supportHubService.sendMessage(inputText, threadId);
+    const textToSend = inputText;
     setInputText('');
+
+    try {
+      const response = await apiClient.post('/api/support/chat', {
+        text: textToSend,
+        attachmentUrl: ''
+      });
+      const sentMsg = response.data;
+      setMessages((prev) => {
+        if (prev.some(m => m.id === sentMsg.id)) return prev;
+        return [...prev, sentMsg];
+      });
+    } catch (err) {
+      console.error('Failed to send message', err);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !threadId) return;
+    if (!file) return;
 
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('threadId', threadId);
 
     try {
-      await apiClient.post('/api/Support/upload-image', formData, {
+      const uploadResponse = await apiClient.post('/api/support/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      // Backend will broadcast the message via SignalR once uploaded
+      const imageUrl = uploadResponse.data.url;
+      
+      const response = await apiClient.post('/api/support/chat', {
+        text: '',
+        attachmentUrl: imageUrl
+      });
+      const sentMsg = response.data;
+      setMessages((prev) => {
+        if (prev.some(m => m.id === sentMsg.id)) return prev;
+        return [...prev, sentMsg];
+      });
     } catch (error) {
       console.error('Image upload failed', error);
     } finally {
@@ -88,7 +108,7 @@ export const SupportChat: React.FC = () => {
     const minutes = dt.getMinutes().toString().padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
+    hours = hours ? hours : 12; 
     return `${hours}:${minutes} ${ampm}`;
   };
 
@@ -98,28 +118,25 @@ export const SupportChat: React.FC = () => {
         {/* Messages List */}
         <div className={styles.messageList}>
           {messages.length === 0 ? (
-            <div className={styles.emptyState}>The conversation is currently empty.</div>
+            <div className={styles.emptyState}>Inscribe a query to summon the Keeper of Records.</div>
           ) : (
             messages.map((msg) => {
-              // If user is Admin, then Admin is self. If user is User, then User is self.
-              // We'll simplify this by checking if the senderRole matches our own role.
-              // Note: our role is from authStore. The mobile app distinguishes visually by 'isSelf'.
-              const isSelf = msg.senderRole === role;
+              const isSelf = msg.sender.toLowerCase() === 'user';
               
               return (
                 <div key={msg.id} className={`${styles.messageWrapper} ${isSelf ? styles.self : styles.other}`}>
                   <div className={styles.messageContent}>
                     <div className={styles.messageBubble}>
-                      {msg.content && <p>{msg.content}</p>}
-                      {msg.imageUrl && (
+                      {msg.text && <p>{msg.text}</p>}
+                      {msg.attachmentUrl && (
                         <img 
-                          src={`http://localhost:5276/api/Support/image/${msg.imageUrl}`} 
+                          src={msg.attachmentUrl} 
                           alt="Attachment" 
                           className={styles.imageAttachment} 
                         />
                       )}
                     </div>
-                    <span className={styles.timestamp}>{formatTime(msg.timestamp)}</span>
+                    <span className={styles.timestamp}>{formatTime(msg.createdAt)}</span>
                   </div>
                 </div>
               );
@@ -156,7 +173,7 @@ export const SupportChat: React.FC = () => {
             <div className={styles.inputBox}>
               <input
                 type="text"
-                placeholder={isUploading ? "Uploading attachment..." : "Inscribe your answer..."}
+                placeholder={isUploading ? "Uploading mystical vision..." : "Inscribe your message..."}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 disabled={isUploading}
