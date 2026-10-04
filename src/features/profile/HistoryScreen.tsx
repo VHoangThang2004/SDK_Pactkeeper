@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ScrollText, ArrowDown } from 'lucide-react';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import styles from './HistoryScreen.module.css';
@@ -19,8 +19,7 @@ const mockHistory: PaymentHistory[] = [
 ];
 
 export const HistoryScreen: React.FC = () => {
-  const [history, setHistory] = useState<PaymentHistory[]>(mockHistory);
-  const [isLoading, setIsLoading] = useState(false);
+  const [history] = useState<PaymentHistory[]>(mockHistory);
 
   // In a real app, fetch from API
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Shield, LogOut, Gem } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
@@ -32,16 +32,15 @@ const mockPacks: TopUpPack[] = [
   { id: '2', name: 'Pouch of Gems', gemsAmount: 300, priceVnd: 66000 },
   { id: '3', name: 'Chest of Gems', gemsAmount: 600, priceVnd: 129000 }, // best value
   { id: '4', name: 'Hoard of Gems', gemsAmount: 1500, priceVnd: 299000 },
-  { id: '5', name: 'Dragon\'s Treasure', gemsAmount: 3500, priceVnd: 699000 },
-  { id: '6', name: 'Kingdom\'s Wealth', gemsAmount: 8000, priceVnd: 1499000 },
+  { id: '5', name: "Dragon's Treasure", gemsAmount: 3500, priceVnd: 699000 },
+  { id: '6', name: "Kingdom's Wealth", gemsAmount: 8000, priceVnd: 1499000 },
 ];
 
 export const TopUpScreen: React.FC = () => {
   const { username, logout } = useAuthStore();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<PlayerProfile>({ ...mockProfile, username: username || 'Wanderer' });
-  const [packs, setPacks] = useState<TopUpPack[]>(mockPacks);
-  const [isLoading, setIsLoading] = useState(false);
+  const [profile] = useState<PlayerProfile>({ ...mockProfile, username: username || 'Wanderer' });
+  const [packs] = useState<TopUpPack[]>(mockPacks);
 
   // In a real app, fetch these from an API
   // useEffect(() => { ... fetch profile & packs ... }, []);

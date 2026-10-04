@@ -1,3 +1,3 @@
 export const ApiConfig = {
-  baseUrl: 'http://localhost:5276', // 'http://localhost:5276'
+  baseUrl: 'http://localhost:5276', // Đã chuyển sang URL production
 };

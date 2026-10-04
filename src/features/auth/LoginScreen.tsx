@@ -98,7 +98,7 @@ export const LoginScreen: React.FC = () => {
                 
                 <button 
                   className={styles.googleBtn} 
-                  onClick={handleGoogleLogin}
+                  onClick={() => handleGoogleLogin()}
                   disabled={isLoading}
                 >
                   {isLoading ? (
