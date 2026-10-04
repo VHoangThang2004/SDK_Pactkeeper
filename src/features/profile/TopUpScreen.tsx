@@ -5,7 +5,8 @@ import { ParchmentBackground } from '../../components/ParchmentBackground/Parchm
 import { useAuthStore } from '../../store/authStore';
 import styles from './TopUpScreen.module.css';
 
-// Mock data types
+import { apiClient } from '../../core/network/apiClient';
+
 interface PlayerProfile {
   username: string;
   level: number;
@@ -20,30 +21,38 @@ interface TopUpPack {
   priceVnd: number;
 }
 
-const mockProfile: PlayerProfile = {
-  username: 'Wanderer',
-  level: 12,
-  experience: 45,
-  gems: 1250,
-};
-
-const mockPacks: TopUpPack[] = [
-  { id: '1', name: 'Handful of Gems', gemsAmount: 100, priceVnd: 22000 },
-  { id: '2', name: 'Pouch of Gems', gemsAmount: 300, priceVnd: 66000 },
-  { id: '3', name: 'Chest of Gems', gemsAmount: 600, priceVnd: 129000 }, // best value
-  { id: '4', name: 'Hoard of Gems', gemsAmount: 1500, priceVnd: 299000 },
-  { id: '5', name: "Dragon's Treasure", gemsAmount: 3500, priceVnd: 699000 },
-  { id: '6', name: "Kingdom's Wealth", gemsAmount: 8000, priceVnd: 1499000 },
-];
-
 export const TopUpScreen: React.FC = () => {
-  const { username, logout } = useAuthStore();
+  const { logout } = useAuthStore();
   const navigate = useNavigate();
-  const [profile] = useState<PlayerProfile>({ ...mockProfile, username: username || 'Wanderer' });
-  const [packs] = useState<TopUpPack[]>(mockPacks);
+  const [profile, setProfile] = useState<PlayerProfile | null>(null);
+  const [packs, setPacks] = useState<TopUpPack[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // In a real app, fetch these from an API
-  // useEffect(() => { ... fetch profile & packs ... }, []);
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [profileRes, packsRes] = await Promise.all([
+          apiClient.get<PlayerProfile>('/api/PlayerProfile'),
+          apiClient.get<TopUpPack[]>('/api/topuppack')
+        ]);
+        setProfile(profileRes.data);
+        setPacks(packsRes.data);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (isLoading || !profile) {
+    return (
+      <ParchmentBackground padding="1rem">
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>Loading...</div>
+      </ParchmentBackground>
+    );
+  }
 
   const xpProgress = Math.min(Math.max(profile.experience / 100, 0), 1);
 

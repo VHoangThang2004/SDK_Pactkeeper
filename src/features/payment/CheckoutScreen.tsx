@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, QrCode, CreditCard, Smartphone, Check } from 'lucide-react';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import { Button } from '../../components/Button/Button';
+import { apiClient } from '../../core/network/apiClient';
 import styles from './CheckoutScreen.module.css';
 
 // Type matching the mock data structure in TopUpScreen
@@ -49,15 +50,23 @@ export const CheckoutScreen: React.FC = () => {
     return `${price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} VND`;
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     setIsLoading(true);
     setSuccessMessage(null);
     
-    // MOCK API CALL
-    setTimeout(() => {
+    try {
+      const response = await apiClient.post('/api/payment/create-order', { packId: pack.id });
+      if (response.data && response.data.checkoutUrl) {
+        window.location.href = response.data.checkoutUrl;
+      } else {
+        setSuccessMessage('Lỗi: Không nhận được link thanh toán từ server.');
+        setIsLoading(false);
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      setSuccessMessage('Đã có lỗi xảy ra khi tạo giao dịch.');
       setIsLoading(false);
-      setSuccessMessage(`Đã mở cổng thanh toán ${PAYMENT_METHODS.find(m => m.id === selectedMethodId)?.name}. Hãy hoàn tất thanh toán!`);
-    }, 1500);
+    }
   };
 
   return (

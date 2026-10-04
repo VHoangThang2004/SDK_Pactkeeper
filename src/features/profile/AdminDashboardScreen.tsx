@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LogOut, User, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import { useAuthStore } from '../../store/authStore';
+import { apiClient } from '../../core/network/apiClient';
 import styles from './AdminDashboardScreen.module.css';
 
 interface ActiveChatPlayer {
@@ -11,14 +13,30 @@ interface ActiveChatPlayer {
   latestMessageTime: string;
 }
 
-const mockActivePlayers: ActiveChatPlayer[] = [
-  { playerId: 'p1', playerName: 'Wanderer', latestMessageText: 'I lost my gems', latestMessageTime: new Date().toISOString() },
-  { playerId: 'p2', playerName: 'Knight_23', latestMessageText: 'Thanks for the help', latestMessageTime: new Date(Date.now() - 3600000).toISOString() },
-];
-
 export const AdminDashboardScreen: React.FC = () => {
   const { logout } = useAuthStore();
-  const [activePlayers] = useState<ActiveChatPlayer[]>(mockActivePlayers);
+  const navigate = useNavigate();
+  const [activePlayers, setActivePlayers] = useState<ActiveChatPlayer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlayers = async () => {
+      try {
+        const response = await apiClient.get<ActiveChatPlayer[]>('/api/support/admin/players');
+        setActivePlayers(response.data);
+      } catch (err) {
+        console.error('Error fetching active players:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPlayers();
+    
+    // Optional: Refresh periodically or use SignalR to listen for new active players.
+    // For now, simple polling every 30s.
+    const interval = setInterval(fetchPlayers, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const formatTime = (isoString: string) => {
     const dt = new Date(isoString);
@@ -40,11 +58,13 @@ export const AdminDashboardScreen: React.FC = () => {
       </div>
 
       <div className={styles.listContainer}>
-        {activePlayers.length === 0 ? (
+        {isLoading ? (
+          <div className={styles.emptyState}>Loading scrolls...</div>
+        ) : activePlayers.length === 0 ? (
           <div className={styles.emptyState}>All scrolls are archived. No active support requests.</div>
         ) : (
           activePlayers.map((player) => (
-            <div key={player.playerId} className={styles.playerCard} onClick={() => alert(`Navigate to chat for ${player.playerName} (Todo: Routing for AdminChatScreen)`)}>
+            <div key={player.playerId} className={styles.playerCard} onClick={() => navigate(`/profile/admin-chat/${player.playerId}`)}>
               <div className={styles.avatarWrapper}>
                 <User size={22} className={styles.avatarIcon} />
               </div>
