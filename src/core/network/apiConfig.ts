@@ -1,3 +1,3 @@
 export const ApiConfig = {
-  baseUrl: 'http://srpg-backend.duckdns.org:5276', // Đã chuyển sang URL production
+  baseUrl: '', // Dùng relative path để Vercel Proxy tự động chuyển tiếp tới HTTP Backend
 };
