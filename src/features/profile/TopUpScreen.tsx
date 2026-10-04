@@ -19,7 +19,27 @@ interface TopUpPack {
   name: string;
   gemsAmount: number;
   priceVnd: number;
+  unitDefinitionIds?: number[];
+  weaponDefinitionIds?: number[];
+  trinketDefinitionIds?: number[];
+  resolvedUnitNames?: string[];
+  resolvedWeaponNames?: string[];
+  resolvedTrinketNames?: string[];
 }
+
+const STATIC_UNITS: Record<number, string> = {
+  1: "Assassin", 2: "Tank", 3: "Warrior",
+  4: "Archer", 5: "Physician", 6: "Druid",
+};
+
+const STATIC_WEAPONS: Record<number, string> = {
+  1: "Dagger", 2: "Sword & Shield", 3: "Axe",
+  4: "CrossBow", 5: "Holy Book", 6: "Staff of the Druid",
+};
+
+const STATIC_TRINKETS: Record<number, string> = {
+  1: "High heels", 2: "Monocle", 3: "Strong boots", 4: "Spyglass",
+};
 
 export const TopUpScreen: React.FC = () => {
   const { logout } = useAuthStore();
@@ -35,8 +55,17 @@ export const TopUpScreen: React.FC = () => {
           apiClient.get<PlayerProfile>('/api/PlayerProfile'),
           apiClient.get<TopUpPack[]>('/api/topuppack')
         ]);
+        
+        // Resolve names for inclusions
+        const resolvedPacks = (packsRes.data || []).map(pack => ({
+          ...pack,
+          resolvedUnitNames: (pack.unitDefinitionIds || []).map(id => STATIC_UNITS[id] || `Hero #${id}`),
+          resolvedWeaponNames: (pack.weaponDefinitionIds || []).map(id => STATIC_WEAPONS[id] || `Weapon #${id}`),
+          resolvedTrinketNames: (pack.trinketDefinitionIds || []).map(id => STATIC_TRINKETS[id] || `Trinket #${id}`),
+        }));
+
         setProfile(profileRes.data);
-        setPacks(packsRes.data);
+        setPacks(resolvedPacks);
       } catch (err) {
         console.error('Error fetching data:', err);
       } finally {
