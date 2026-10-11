@@ -11,7 +11,8 @@ export class SupportHubService {
     if (!token) return;
 
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${ApiConfig.baseUrl}/hubs/support?access_token=${token}`, {
+      .withUrl(`${ApiConfig.baseUrl}/hubs/support`, {
+        accessTokenFactory: () => StorageService.getToken() || '',
         skipNegotiation: true,
         transport: signalR.HttpTransportType.WebSockets,
       })
