@@ -1,180 +1,219 @@
 # 🛡️ Pactkeeper Web SDK & Player Portal
 
-> **Dự án tốt nghiệp:** SEP490 - FPT University  
+> **Capstone Project:** SEP490 — Software Engineering, FPT University  
 > **Repository:** `VHoangThang2004/SDK_Pactkeeper`  
-> **Trạng thái:** Đang phát triển & Triển khai thử nghiệm (In Progress)  
+> **Status:** Active Development & Test Deployment  
 > **Production URL:** [https://pactkeeper-web.vercel.app](https://pactkeeper-web.vercel.app)
 
 ---
 
-## 📖 1. Giới thiệu tổng quan (Overview)
+## 📖 1. Overview
 
-**Pactkeeper Web SDK** là cổng thông tin và dịch vụ web đồng hành cùng tựa game chiến thuật **Pactkeeper (SRPG)**. Hệ thống cung cấp cho người chơi nền tảng an toàn, tiện lợi để thực hiện các giao dịch nạp tiền, theo dõi hồ sơ cá nhân, lịch sử giao dịch và kết nối hỗ trợ trực tuyến thời gian thực với đội ngũ quản trị viên (Admin/Game Master).
+The **Pactkeeper Web SDK & Player Portal** is the official web companion platform for the tactical strategy RPG **Pactkeeper (SRPG)**. Designed with an immersive medieval fantasy and parchment aesthetic, the portal provides players and administrators with a secure, responsive, and seamless interface for microtransactions, profile management, and live customer counsel.
 
-### Các phân hệ chính:
-- **Treasury (Nạp ngọc):** Danh mục gói ngọc và vật phẩm tặng kèm, tích hợp thanh toán trực tuyến.
-- **Player Profile (Hồ sơ người chơi):** Cấp bậc, điểm kinh nghiệm, số ngọc sở hữu và avatar phiêu lưu.
-- **Treasury Ledger (Lịch sử giao dịch):** Bảng kê chi tiết các giao dịch nạp tiền, trạng thái đơn hàng và mã giao dịch.
-- **Counsel (Hỗ trợ trực tuyến Real-time):** Kênh trao đổi trực tiếp giữa người chơi và Admin/Bot thông qua SignalR.
-- **Keeper's Archives (Bảng quản trị Admin):** Tiếp nhận yêu cầu tư vấn, quản lý phòng chat hỗ trợ từng người chơi.
-
----
-
-## 🚀 2. Báo cáo tiến trình dự án (Project Progress)
-
-### 📊 Bảng tổng hợp các mốc tính năng
-
-| Phân hệ / Tính năng | Trạng thái | Mô tả chi tiết |
-| :--- | :---: | :--- |
-| **Google OAuth 2.0 Login** |  Hoàn thành | Đăng nhập an toàn qua tài khoản Google, tự động xác thực và nhận diện người chơi. |
-| **Admin Entrance Authentication** |  Hoàn thành | Cổng đăng nhập bảo mật dành riêng cho Quản trị viên (True Name & Secret Word). |
-| **Role-based Route Guarding** |  Hoàn thành | Phân quyền tuyến đường (`/profile/*`, `/checkout`, `/admin-dashboard`, `/admin-chat/*`). |
-| **Player Profile & Resilience Fallback** |  Hoàn thành | Hiển thị hồ sơ, cấp độ, kinh nghiệm và cơ chế fallback an toàn chống treo loading. |
-| **Gem Acquisition & Package Catalog** |  Hoàn thành | Hiển thị các gói nạp ngọc, tự động map tên tướng/vũ khí/phụ kiện tặng kèm. |
-| **Checkout & Payment Flow** |  Hoàn thành | Màn hình xác nhận giỏ hàng, thông tin thanh toán, chuyển tiếp cổng thanh toán PayOS/VNPAY. |
-| **Payment Result Handling** |  Hoàn thành | Trang điều hướng kết quả thanh toán thành công (`/payment/success`) hoặc hủy (`/payment/cancel`). |
-| **Treasury Ledger (Lịch sử giao dịch)** |  Hoàn thành | Bảng theo dõi lịch sử nạp tiền, trạng thái `CONFIRMED` / `PENDING` / `CANCELLED`. |
-| **Missives (Hòm thư / Thông báo)** |  Hoàn thành | Giao diện tiếp nhận thư tín và thông điệp từ hệ thống. |
-| **Counsel / Live Support (SignalR)** |  Hoàn thành | Chat hỗ trợ real-time hai chiều, gửi văn bản và tải lên hình ảnh đính kèm. |
-| **Admin Support Dashboard** |  Hoàn thành | Danh sách người chơi gửi yêu cầu hỗ trợ và truy cập phòng chat tương ứng. |
-| **Reverse Proxy & Deployment** |  Hoàn thành | Cấu hình Vercel Rewrite chuyển tiếp API và WebSocket/SignalR về Backend Kestrel. |
+### Core Modules:
+- **Treasury (Gem Acquisition):** Catalog of gem packages bundled with in-game heroes, weapons, and trinkets, integrated with payment gateways (PayOS).
+- **Player Profile:** Live display of adventurer rank, level, experience progression, gem reserves, and dynamic character avatar.
+- **Treasury Ledger (Payment History):** Real-time ledger tracking all gem transactions and order states (`CONFIRMED`, `PENDING`, `CANCELLED`).
+- **Counsel (Live Realtime Support):** Two-way real-time communication channel powered by Microsoft SignalR, supporting text messaging and image uploads.
+- **Keeper's Archives (Admin Console):** Management console for Game Masters and Administrators to review active player counsel scrolls and provide live support.
 
 ---
 
-### 📝 Chi tiết tiến trình các đợt cập nhật gần nhất
+## 🛠️ 2. Tech Stack
 
-- **Giai đoạn 1: Nền tảng giao diện & Xác thực**
-  - Khởi tạo kiến trúc dự án với React 19, TypeScript và Vite.
-  - Thiết kế giao diện phong cách giấy cổ (Parchment & Fantasy Medieval UI).
-  - Tích hợp `@react-oauth/google` và hệ thống quản lý trạng thái phiên đăng nhập Zustand (`authStore`).
-
-- **Giai đoạn 2: Tích hợp Dịch vụ Thanh toán (Payment & Top-Up)**
-  - Xây dựng module Treasury hiển thị danh sách gói nạp lấy từ API `/api/topuppack`.
-  - Hoàn thiện luồng thanh toán Checkout (`CheckoutScreen`) và xử lý kết quả giao dịch (`PaymentResultScreen`).
-  - Xây dựng trang Ledger theo dõi lịch sử dòng tiền từ `/api/payment/history`.
-
-- **Giai đoạn 3: Tính năng Tư vấn Trực tuyến (Counsel / SignalR)**
-  - Tích hợp `@microsoft/signalr` kết nối tới `/hubs/support`.
-  - Hỗ trợ tải ảnh đính kèm thông qua endpoint upload `/api/support/upload`.
-  - Xây dựng giao diện chat kép: Client Support Chat và Admin Support Console.
-
-- **Giai đoạn 4: Tối ưu hóa Kết nối & Bảo mật (Current)**
-  - Khắc phục triệt để lỗi kẹt trạng thái Loading khi gọi API hồ sơ người chơi.
-  - Nâng cấp `apiClient` Axios: tăng timeout lên 30s, tự động xử lý token hết hạn (401).
-  - Chuẩn hóa Client ID Google OAuth, bổ sung fallback an toàn cho hệ thống.
+| Category | Technology | Version | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Core Framework** | React | `19.2.x` | Modern reactive UI component architecture |
+| **Language** | TypeScript | `~6.0.x` | Strict type safety and maintainable contracts |
+| **Build & Bundler** | Vite | `^8.1.x` | Ultra-fast development server and optimized build |
+| **State Management**| Zustand | `^5.0.x` | Lightweight, scalable state management (`authStore`) |
+| **Routing** | React Router DOM | `^7.18.x` | Client-side routing with role-based route guards |
+| **HTTP Client** | Axios | `^1.18.x` | Interceptor-driven HTTP requests with 401 handling |
+| **Realtime Gateway**| Microsoft SignalR Client | `^10.0.x` | WebSockets/SignalR client for real-time live support |
+| **Authentication** | `@react-oauth/google` | `^0.13.x` | Secure Google OAuth 2.0 Identity Provider |
+| **Icons** | Lucide React | `^1.25.x` | Crisp, medieval-compatible iconography |
+| **Linter** | Oxlint | `^1.71.x` | High-speed Rust-based code quality linter |
+| **Deployment** | Vercel Serverless / CLI | - | Global Edge CDN with reverse proxy capabilities |
 
 ---
 
-## 🛠️ 3. Công nghệ sử dụng (Tech Stack)
+## 🏗️ 3. Architecture & Design Principles
 
-| Thành phần | Công nghệ | Phiên bản |
-| :--- | :--- | :--- |
-| **Core Framework** | React | `19.2.x` |
-| **Ngôn ngữ** | TypeScript | `~6.0.x` |
-| **Bundler & Build Tool** | Vite | `^8.1.x` |
-| **State Management** | Zustand | `^5.0.x` |
-| **Routing** | React Router DOM | `^7.18.x` |
-| **Network Client** | Axios | `^1.18.x` |
-| **Realtime Gateway** | Microsoft SignalR Client | `^10.0.x` |
-| **Authentication** | Google OAuth (`@react-oauth/google`) | `^0.13.x` |
-| **Iconography** | Lucide React | `^1.25.x` |
-| **Linter** | Oxlint | `^1.71.x` |
-| **Deployment** | Vercel Edge / Serverless Proxy | - |
-
----
-
-## 📁 4. Cấu trúc thư mục (Folder Structure)
+The application is engineered using **Clean Architecture** principles to maintain strict separation of concerns, decoupling domain business rules from user interfaces and external third-party SDKs:
 
 ```text
-SDK_Pactkeeper/
-├── public/                 # Tài nguyên tĩnh (favicon, icons)
-├── src/
-│   ├── assets/             # Hình ảnh đồ họa và biểu tượng nền
-│   ├── components/         # Các thành phần UI tái sử dụng
-│   │   ├── BottomNav/      # Thanh điều hướng người chơi (Mobile/Web)
-│   │   ├── Button/         # Nút bấm phong cách Fantasy
-│   │   ├── Input/          # Ô nhập liệu chuẩn hóa
-│   │   ├── LayoutWrapper/  # Khung bao bố cục chung
-│   │   ├── ParchmentBackground/ # Nền giấy cổ
-│   │   └── ScrollHeader/   # Tiêu đề cuộn chỉ phong cách cổ
-│   ├── core/
-│   │   ├── network/        # Cấu hình API Client & Axios Interceptors
-│   │   └── services/       # Quản lý lưu trữ LocalStorage / Tokens
-│   ├── features/
-│   │   ├── auth/           # Đăng nhập Google & Quản trị viên
-│   │   ├── payment/        # Thanh toán, Checkout & Kết quả giao dịch
-│   │   ├── profile/        # Nạp ngọc, Hồ sơ, Lịch sử & Admin Dashboard
-│   │   └── support/        # Chat hỗ trợ real-time SignalR
-│   ├── store/              # Zustand Auth Store (quản lý session & roles)
-│   ├── styles/             # Global CSS, Design Tokens & Color Palettes
-│   ├── App.tsx             # Định tuyến cấp cao (Routing & Route Guards)
-│   └── main.tsx            # Điểm khởi chạy ứng dụng & Google OAuth Provider
-├── vercel.json             # Cấu hình Reverse Proxy chuyển tiếp API/Hubs
-├── vite.config.ts          # Cấu hình Vite & Development Proxy
-└── package.json            # Khai báo phụ thuộc và kịch bản thực thi
+src/
+├── core/
+│   ├── domain/             # Enterprise Business Rules
+│   │   ├── entities/       # Domain Models (e.g., User)
+│   │   └── repositories/   # Abstract Repository Interfaces (e.g., IAuthRepository)
+│   ├── app/                # Application Business Rules
+│   │   └── useCases/       # Use Cases (e.g., LoginUseCase, LoginWithGoogleUseCase)
+│   ├── infra/              # Infrastructure Layer
+│   │   ├── http/           # Axios apiClient instance, interceptors, and API config
+│   │   ├── storage/        # LocalStorage persistence service
+│   │   └── repositoriesImpl/# Concrete Repository Implementations (e.g., AuthRepositoryImpl)
+│   └── network/            # Backward-compatibility facade exports
+├── features/               # Feature-Sliced Presentation Modules
+│   ├── auth/               # Google OAuth, Admin authentication, and DI Container
+│   ├── payment/            # Checkout screen and payment result callback views
+│   ├── profile/            # Treasury top-up, ledger, missives, and admin dashboard
+│   └── support/            # Real-time SignalR support chat and service
+├── components/             # Reusable Design System Widgets (Parchment, Buttons, Inputs)
+├── store/                  # Global Zustand Stores
+├── styles/                 # Global styles, variables, and Medieval fantasy theme tokens
+├── App.tsx                 # Route declarations & role-based authentication guards
+└── main.tsx                # Application bootstrap & Google OAuth Provider wrapper
 ```
 
 ---
 
-## ⚙️ 5. Cài đặt và Chạy thử (Getting Started)
+## 🔒 4. Environment & Security Configuration
 
-### 1. Yêu cầu tiên quyết
-- **Node.js:** phiên bản `18.x` hoặc cao hơn
-- **npm** hoặc **yarn / pnpm**
+To prevent **Reconnaissance & Information Disclosure** vulnerabilities (preventing malicious automated scrapers from mapping private backend IP addresses, DDNS domains, or ports on public Git repositories), sensitive configuration files are strictly excluded via `.gitignore`.
 
-### 2. Cài đặt các gói phụ thuộc
-```bash
-npm install
-```
+You **must** create the following two configuration files on your local development machine before running or deploying the project.
 
-### 3. Cấu hình biến môi trường
-Tạo file `.env` tại thư mục gốc của project:
+### 4.1 Creating `.env` (Local Development)
+
+Create a file named `.env` in the root folder of the project (`SDK_Pactkeeper/.env`):
+
 ```env
 # Google OAuth 2.0 Web Client ID
-VITE_GOOGLE_CLIENT_ID=your_google_client_id_here.apps.googleusercontent.com
+VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 
-# Backend Target Host (Cho Vite Proxy & Local Development)
+# Backend Target Host (Used by Vite's development proxy to forward /api and /hubs)
+# Replace with your actual backend host or local dev server
 VITE_BACKEND_TARGET=http://localhost:5276
 ```
 
-### 4. Khởi chạy môi trường phát triển (Development)
+> **Why this is needed:**  
+> During `npm run dev`, Vite reads `VITE_BACKEND_TARGET` to dynamically route `/api/*` and `/hubs/*` requests to your backend without encountering CORS or Mixed Content restrictions.
+
+---
+
+### 4.2 Creating `vercel.json` (Production Deployment)
+
+Create a file named `vercel.json` in the root folder of the project (`SDK_Pactkeeper/vercel.json`):
+
+```json
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://your-backend-host:5276/api/:path*"
+    },
+    {
+      "source": "/hubs/:path*",
+      "destination": "http://your-backend-host:5276/hubs/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+> **Why this is needed:**  
+> In production, Vercel acts as a secure HTTPS Reverse Proxy. It terminates SSL on `https://pactkeeper-web.vercel.app` and proxies client API calls to the Kestrel backend over HTTP server-to-server. Keeping `vercel.json` in `.gitignore` guarantees that the backend host is never publicly exposed on GitHub.
+
+---
+
+## 🚀 5. Getting Started
+
+### 1. Prerequisites
+- **Node.js:** version `18.x` or higher (`node -v`)
+- **Package Manager:** `npm` (bundled with Node) or `pnpm` / `yarn`
+- **Vercel CLI:** (optional, for production deployments)
+
+### 2. Installation
+Clone the repository and install project dependencies:
+```bash
+git clone https://github.com/VHoangThang2004/SDK_Pactkeeper.git
+cd SDK_Pactkeeper
+npm install
+```
+
+### 3. Setup Gitignored Configuration Files
+Follow the instructions in **Section 4** above to create your local `.env` and `vercel.json` files.
+
+### 4. Running the Development Server
+Start the local Vite development server:
 ```bash
 npm run dev
 ```
-Ứng dụng sẽ chạy tại địa chỉ: `http://localhost:5173`
+The application will launch at:  
+👉 **`http://localhost:5173`**
 
-### 5. Kiểm tra mã nguồn & Đóng gói (Build)
+### 5. Code Quality & Production Build
+Run the fast Rust linter and verify TypeScript compilation:
 ```bash
-# Kiểm tra lint
+# Run Oxlint
 npm run lint
 
-# Biên dịch TypeScript và đóng gói Production
+# Compile TypeScript and bundle for production
 npm run build
+
+# Preview production build locally
+npm run preview
 ```
 
 ---
 
-## 🌐 6. Cấu hình Backend & Triển khai (Deployment)
+## 🌐 6. Deployment Guide (Vercel CLI)
 
-### 6.1 Môi trường phát triển cục bộ (Local Development)
-- **Backend Target:** Được cấu hình qua biến môi trường `VITE_BACKEND_TARGET` trong `.env` (mặc định môi trường dev: `http://localhost:5276`).
-- **Proxy Dev:** Vite proxy chuyển tiếp các request `/api/*` và `/hubs/*` trực tiếp tới backend target mà không gặp lỗi CORS.
+Because `vercel.json` is intentionally excluded from Git, **do not rely on GitHub automated triggers on Vercel** (which would deploy without proxy rewrite rules). Instead, deploy directly from your local machine using the official **Vercel CLI**.
 
-### 6.2 Triển khai Production lên Vercel (Vercel CLI)
-Nhằm bảo vệ an toàn thông tin máy chủ (tránh lỗ hổng Information Disclosure khi Public repository lên GitHub), tệp `vercel.json` đã được đưa vào `.gitignore`:
-1. Cấu hình tệp `vercel.json` tại thư mục gốc trên máy cục bộ với các proxy destination tương ứng.
-2. Triển khai trực tiếp từ máy cục bộ thông qua Vercel CLI:
+### Step 1: Install Vercel CLI & Authenticate
 ```bash
-# Cài đặt Vercel CLI (nếu chưa cài)
-npm i -g vercel
+# Install Vercel CLI globally
+npm install -g vercel
 
-# Triển khai trực tiếp lên Production
+# Log in to your Vercel account
+vercel login
+```
+
+### Step 2: Link to Project (One-time only)
+Link your local repository to the `pactkeeper-web` project:
+```bash
+vercel link --yes --project pactkeeper-web
+```
+
+### Step 3: Deploy to Production
+Deploy your local build and proxy configuration directly to the live environment:
+```bash
 vercel --prod
 ```
-Cách tiếp cận này giúp Vercel CLI tải trực tiếp cấu hình `vercel.json` cục bộ lên máy chủ Vercel mà hoàn toàn không để lộ địa chỉ backend thực tế trên GitHub.
+
+> [!IMPORTANT]
+> **Vercel Dashboard Configuration:**  
+> Go to **Vercel Dashboard** ➔ Project **`pactkeeper-web`** ➔ **Settings** ➔ **Git** and ensure automatic deployments from GitHub are paused or disconnected. This prevents GitHub pushes from overwriting your local `vercel.json` proxy rules with an unconfigured build.
 
 ---
 
-## 👥 7. Nhóm phát triển (Development Team)
-- **Sinh viên thực hiện:** Võ Hoàng Thắng (SE182121)
-- **Đề tài:** SRPG Pactkeeper - Đồ án tốt nghiệp Kỹ thuật phần mềm (SEP490), Đại học FPT.
+## 📊 7. Feature Roadmap & Milestone Status
+
+| Subsystem / Feature | Status | Description |
+| :--- | :---: | :--- |
+| **Google OAuth 2.0 Login** | Completed | Frictionless one-tap authentication for players. |
+| **Admin Authentication** | Completed | Secure credentials portal for Game Masters. |
+| **Role-Based Routing** | Completed | Strict access barriers for admin and player routes. |
+| **Resilience & Fallback Engine** | Completed | Safeguards preventing infinite loading on network dropouts. |
+| **Gem Catalog & Item Resolution**| Completed | Dynamic resolution of bundled heroes, weapons, and trinkets. |
+| **PayOS Payment Gateway** | Completed | Secure order creation and gateway redirect flow. |
+| **Transaction Ledger** | Completed | Full auditing history of past tithes and acquired gems. |
+| **System Missives (Mailbox)** | Completed | Inbox for announcements and system status dispatches. |
+| **Realtime SignalR Support** | Completed | Bidirectional live chat and image upload capabilities. |
+| **Admin Support Console** | Completed | Real-time queue of player counsel tickets. |
+| **Zero-Disclosure Deployment** | Completed | Complete elimination of hardcoded backend endpoints from Git. |
+
+---
+
+## 👥 8. Development Team
+
+- **Lead Developer:** Vo Hoang Thang (SE182121)
+- **Course:** SEP490 — Capstone Project, Software Engineering
+- **Institution:** FPT University
+- **Game Project:** SRPG Pactkeeper
