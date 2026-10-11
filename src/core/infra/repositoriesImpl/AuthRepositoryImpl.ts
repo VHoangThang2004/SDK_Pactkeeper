@@ -1,17 +1,13 @@
-import { apiClient } from '../../../core/network/apiClient';
-import { StorageService } from '../../../core/services/storageService';
+import type { IAuthRepository } from '../../domain/repositories/IAuthRepository';
+import type { User } from '../../domain/entities/User';
+import { apiClient } from '../http/apiClient';
 
-export interface AuthResponse {
-  token: string;
-  username: string;
-  playerId: string;
-  role: string;
-}
-
-export class AuthService {
-  static async login(username: string, password: string): Promise<AuthResponse> {
+export class AuthRepositoryImpl implements IAuthRepository {
+  async login(username: string, password: string): Promise<User> {
     try {
-      const response = await apiClient.post<AuthResponse>('/api/auth/login', {
+      const response = await apiClient.post<User>('/api/auth/login', {
+        username,
+        password,
         Username: username,
         Password: password,
       });
@@ -36,11 +32,11 @@ export class AuthService {
       if (e.response?.status === 403) {
         throw new Error('Account does not have access permission');
       }
-      throw new Error('Server connection error! Please try again');
+      throw new Error(e.message || 'Server connection error! Please try again');
     }
   }
 
-  static async loginWithGoogle(idToken: string): Promise<AuthResponse> {
+  async loginWithGoogle(idToken: string): Promise<User> {
     try {
       const response = await apiClient.post<any>('/api/auth/google', {
         idToken,
@@ -66,9 +62,5 @@ export class AuthService {
       }
       throw new Error(e.message || 'Server connection error during Google login!');
     }
-  }
-
-  static logout() {
-    StorageService.clearAuthData();
   }
 }

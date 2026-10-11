@@ -57,6 +57,8 @@ export const CheckoutScreen: React.FC = () => {
     try {
       const response = await apiClient.post('/api/payment/create-order', { 
         packId: pack.id,
+        returnUrl: `${window.location.origin}/payment/success`,
+        cancelUrl: `${window.location.origin}/payment/cancel`,
         ReturnUrl: `${window.location.origin}/payment/success`,
         CancelUrl: `${window.location.origin}/payment/cancel`
       });

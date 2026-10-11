@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { BookOpen, ShieldAlert, User, KeyRound } from 'lucide-react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
-import { AuthService } from './services/authService';
+import { loginUseCase, loginWithGoogleUseCase } from './di';
 import styles from './LoginScreen.module.css';
 
 export const LoginScreen: React.FC = () => {
@@ -16,29 +16,12 @@ export const LoginScreen: React.FC = () => {
 
   const handleNormalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username) {
-      setError('Please enter True Name (username)');
-      return;
-    }
-    if (username.length < 3) {
-      setError('True Name must contain at least 3 characters');
-      return;
-    }
-    if (!password) {
-      setError('Please enter Secret Word (password)');
-      return;
-    }
-    if (password.length < 4) {
-      setError('Secret Word must contain at least 4 characters');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await AuthService.login(username, password);
-      login(response.token, response.username, response.playerId, response.role);
+      const user = await loginUseCase.execute(username, password);
+      login(user.token, user.username, user.playerId, user.role);
     } catch (err: any) {
       setError(err.message || 'Lỗi đăng nhập');
     } finally {
@@ -47,18 +30,11 @@ export const LoginScreen: React.FC = () => {
   };
 
   const loginWithGoogleMutation = async (idToken: string | undefined) => {
-    if (!idToken) {
-      setError('Error: Did not receive token from Google');
-      return;
-    }
     setIsLoading(true);
     setError(null);
     try {
-      const response = await AuthService.loginWithGoogle(idToken);
-      if (!response.token) {
-        throw new Error('Authentication token not received from server');
-      }
-      login(response.token, response.username, response.playerId, response.role);
+      const user = await loginWithGoogleUseCase.execute(idToken);
+      login(user.token, user.username, user.playerId, user.role);
     } catch (err: any) {
       setError(err.message || 'Google login error');
     } finally {
