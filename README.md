@@ -130,7 +130,11 @@ npm install
 ### 3. Cấu hình biến môi trường
 Tạo file `.env` tại thư mục gốc của project:
 ```env
+# Google OAuth 2.0 Web Client ID
 VITE_GOOGLE_CLIENT_ID=your_google_client_id_here.apps.googleusercontent.com
+
+# Backend Target Host (Cho Vite Proxy & Local Development)
+VITE_BACKEND_TARGET=http://localhost:5276
 ```
 
 ### 4. Khởi chạy môi trường phát triển (Development)
@@ -150,14 +154,24 @@ npm run build
 
 ---
 
-## 🌐 6. Cấu hình Backend & Proxy
+## 🌐 6. Cấu hình Backend & Triển khai (Deployment)
 
-Dự án kết nối tới Backend Kestrel của Pactkeeper tại:
-- **Backend Host:** `http://localhost:5276`
-- **Tập lệnh API:** `/api/*`
-- **SignalR Hub:** `/hubs/support`
+### 6.1 Môi trường phát triển cục bộ (Local Development)
+- **Backend Target:** Được cấu hình qua biến môi trường `VITE_BACKEND_TARGET` trong `.env` (mặc định môi trường dev: `http://localhost:5276`).
+- **Proxy Dev:** Vite proxy chuyển tiếp các request `/api/*` và `/hubs/*` trực tiếp tới backend target mà không gặp lỗi CORS.
 
-Trên môi trường **Vercel**, việc định tuyến được cấu hình tự động thông qua [`vercel.json`](./vercel.json) để tránh lỗi Mixed Content (HTTPS sang HTTP) và hạn chế rò rỉ địa chỉ IP backend.
+### 6.2 Triển khai Production lên Vercel (Vercel CLI)
+Nhằm bảo vệ an toàn thông tin máy chủ (tránh lỗ hổng Information Disclosure khi Public repository lên GitHub), tệp `vercel.json` đã được đưa vào `.gitignore`:
+1. Cấu hình tệp `vercel.json` tại thư mục gốc trên máy cục bộ với các proxy destination tương ứng.
+2. Triển khai trực tiếp từ máy cục bộ thông qua Vercel CLI:
+```bash
+# Cài đặt Vercel CLI (nếu chưa cài)
+npm i -g vercel
+
+# Triển khai trực tiếp lên Production
+vercel --prod
+```
+Cách tiếp cận này giúp Vercel CLI tải trực tiếp cấu hình `vercel.json` cục bộ lên máy chủ Vercel mà hoàn toàn không để lộ địa chỉ backend thực tế trên GitHub.
 
 ---
 
