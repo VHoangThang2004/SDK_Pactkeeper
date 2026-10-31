@@ -1,17 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, Home } from 'lucide-react';
+import { CheckCircle, XCircle, Home, Loader2 } from 'lucide-react';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import { Button } from '../../components/Button/Button';
+import { apiClient } from '../../core/network/apiClient';
 import styles from './CheckoutScreen.module.css';
 
 export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSuccess }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Optionally parse query params from PayOS
+  // Parse query params from PayOS redirect
   const searchParams = new URLSearchParams(location.search);
   const orderCode = searchParams.get('orderCode');
+  const payOsStatus = searchParams.get('status');
+
+  const [isSyncing, setIsSyncing] = useState<boolean>(Boolean(orderCode));
+
+  useEffect(() => {
+    if (!orderCode) return;
+
+    const reconcileOrder = async () => {
+      try {
+        setIsSyncing(true);
+        const targetStatus = isSuccess ? (payOsStatus || 'PAID') : 'CANCELLED';
+        await apiClient.post(`/api/payment/sync/${orderCode}?status=${targetStatus}`);
+      } catch (err) {
+        console.warn('Reconciling payment order in background:', err);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    reconcileOrder();
+  }, [orderCode, isSuccess, payOsStatus]);
 
   return (
     <ParchmentBackground>
@@ -24,6 +46,12 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
               <p style={{ margin: '1rem 0', color: '#5c4b3a' }}>
                 Your payment was successful (Order: {orderCode}). The Gems and items have been magically added to your treasury.
               </p>
+              {isSyncing && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#8c7b6a', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                  <Loader2 size={16} className={styles.spinning} />
+                  <span>Sealing transaction into kingdom archives...</span>
+                </div>
+              )}
             </>
           ) : (
             <>

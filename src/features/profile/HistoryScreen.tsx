@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ScrollText, ArrowDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ScrollText, ArrowDown, RefreshCw } from 'lucide-react';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import styles from './HistoryScreen.module.css';
 
@@ -17,17 +17,19 @@ export const HistoryScreen: React.FC = () => {
   const [history, setHistory] = useState<PaymentHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const response = await apiClient.get<PaymentHistory[]>('/api/payment/history');
-        setHistory(response.data);
-      } catch (err) {
-        console.error('Error fetching history:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchHistory = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get<PaymentHistory[]>('/api/payment/history');
+      setHistory(response.data);
+    } catch (err) {
+      console.error('Error fetching history:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchHistory();
   }, []);
 
@@ -63,6 +65,27 @@ export const HistoryScreen: React.FC = () => {
       <div className={styles.headerRow}>
         <ScrollText size={20} className={styles.headerIcon} />
         <h2 className={styles.headerTitle}>Treasury Ledger</h2>
+        <button 
+          onClick={fetchHistory}
+          disabled={isLoading}
+          style={{
+            marginLeft: 'auto',
+            background: 'none',
+            border: 'none',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            color: 'var(--color-ink-light)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            fontFamily: 'var(--font-heading)',
+            fontSize: '0.75rem',
+            padding: '0.2rem 0.5rem',
+          }}
+          title="Refresh and reconcile ledger records"
+        >
+          <RefreshCw size={13} style={{ animation: isLoading ? 'spin 1s linear infinite' : 'none' }} />
+          <span>{isLoading ? 'Syncing...' : 'Sync Ledger'}</span>
+        </button>
       </div>
 
       <div className={styles.ledgerContainer}>
@@ -75,8 +98,8 @@ export const HistoryScreen: React.FC = () => {
 
         {/* Table Body */}
         <div className={styles.tableBody}>
-          {isLoading ? (
-            <div className={styles.emptyState}>Loading ledger...</div>
+          {isLoading && history.length === 0 ? (
+            <div className={styles.emptyState}>Loading and reconciling ledger...</div>
           ) : history.length === 0 ? (
             <div className={styles.emptyState}>No entries found in the treasury ledger.</div>
           ) : (
