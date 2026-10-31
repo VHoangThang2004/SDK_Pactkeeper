@@ -60,6 +60,12 @@
   align-items: center;
 }
 
+.rowWrapper {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(139, 115, 85, 0.2);
+}
+
 .tableRow {
   padding: 0.75rem;
   display: flex;
@@ -71,7 +77,7 @@
 }
 
 .oddRow {
-  background-color: rgba(0,0,0,0.05);
+  background-color: rgba(0,0,0,0.04);
 }
 
 .dateText {
@@ -114,6 +120,107 @@
 
 .acquiredIcon {
   color: var(--color-gold-dark);
+}
+
+.pendingBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #b78103;
+  background: rgba(183, 129, 3, 0.1);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid rgba(183, 129, 3, 0.3);
+}
+
+.pendingActionBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.75rem 0.6rem 0.75rem;
+  background-color: rgba(212, 175, 55, 0.08);
+  border-top: 1px dashed rgba(139, 115, 85, 0.25);
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.expiryNote {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: #7a634e;
+  font-style: italic;
+}
+
+.clockIcon {
+  color: #b78103;
+}
+
+.actionButtonGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.payNowBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: linear-gradient(135deg, #2e7d32, #1b5e20);
+  color: #ffffff;
+  border: 1px solid #1b5e20;
+  border-radius: 4px;
+  padding: 0.28rem 0.65rem;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.payNowBtn:hover {
+  background: linear-gradient(135deg, #388e3c, #2e7d32);
+  transform: translateY(-1px);
+}
+
+.cancelBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  color: #a83232;
+  border: 1px solid #a83232;
+  border-radius: 4px;
+  padding: 0.28rem 0.65rem;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background-color: rgba(168, 50, 50, 0.1);
+}
+
+.cancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .emptyState {
