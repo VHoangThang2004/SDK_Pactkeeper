@@ -42,6 +42,7 @@ export const HistoryScreen: React.FC = () => {
 
   const mapStatus = (status: string) => {
     switch (status.toUpperCase()) {
+      case 'PAID':
       case 'CONFIRMED': return 'Completed';
       case 'CANCELLED': return 'Failed';
       default: return 'Pending';
@@ -50,6 +51,7 @@ export const HistoryScreen: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
+      case 'PAID':
       case 'CONFIRMED': return '#1B5E20'; // Green
       case 'CANCELLED': return 'var(--color-ruby)';
       default: return 'var(--color-ink-light)';
@@ -80,7 +82,7 @@ export const HistoryScreen: React.FC = () => {
           ) : (
             history.map((txn, index) => {
               const isEven = index % 2 === 0;
-              const isCompleted = txn.status.toUpperCase() === 'CONFIRMED';
+              const isCompleted = txn.status.toUpperCase() === 'CONFIRMED' || txn.status.toUpperCase() === 'PAID';
 
               return (
                 <div key={txn.orderCode} className={`${styles.tableRow} ${isEven ? styles.evenRow : styles.oddRow}`}>

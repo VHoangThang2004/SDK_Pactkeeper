@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, LogOut, Gem } from 'lucide-react';
+import { Shield, LogOut, Gem, Coins } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import { useAuthStore } from '../../store/authStore';
@@ -12,6 +12,7 @@ interface PlayerProfile {
   level: number;
   experience: number;
   gems: number;
+  gold?: number;
 }
 
 interface TopUpPack {
@@ -61,6 +62,7 @@ export const TopUpScreen: React.FC = () => {
     level: 1,
     experience: 0,
     gems: 0,
+    gold: 0,
   });
   const [packs, setPacks] = useState<TopUpPack[]>(DEFAULT_PACKS);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,6 +82,7 @@ export const TopUpScreen: React.FC = () => {
             level: raw.level ?? 1,
             experience: raw.experience ?? 0,
             gems: raw.gems ?? 0,
+            gold: raw.gold ?? 0,
           });
         }
 
@@ -157,10 +160,21 @@ export const TopUpScreen: React.FC = () => {
             </div>
             
             <div className={styles.wealthContainer}>
-              <span className={styles.wealthLabel}>CURRENT GEMS</span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <span className={styles.wealthLabel}>CURRENT GEMS</span>
               <div className={styles.wealthValue}>
-                <Gem size={24} className={styles.gemIcon} />
+                <Gem size={22} className={styles.gemIcon} />
                 <span>{profile.gems.toLocaleString('en-US')}</span>
+                  </div>
+                </div>
+                <div>
+                  <span className={styles.wealthLabel}>VAULT GOLD</span>
+              <div className={styles.wealthValue}>
+                <Coins size={22} className={styles.gemIcon} />
+                <span>{(profile.gold ?? 0).toLocaleString('en-US')}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

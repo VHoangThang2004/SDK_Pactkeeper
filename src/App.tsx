@@ -13,6 +13,9 @@ import { PaymentResultScreen } from './features/payment/PaymentResultScreen';
 
 function App() {
   const { isLoggedIn, role } = useAuthStore();
+  const isAdminOrSupport = Boolean(
+    role && ['Admin', 'Technical Support', 'Support', 'Moderator'].includes(role)
+  );
 
   return (
     <Router>
@@ -28,7 +31,7 @@ function App() {
           </>
         ) : (
           <>
-            {role === 'Admin' ? (
+            {isAdminOrSupport ? (
               <>
                 <Route path="/profile" element={<ProfileScreen />}>
                   <Route path="admin-dashboard" element={<AdminDashboardScreen />} />
