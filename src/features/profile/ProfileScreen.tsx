@@ -8,21 +8,19 @@ import { useAuthStore } from '../../store/authStore';
 export const ProfileScreen: React.FC = () => {
   const location = useLocation();
   const { role } = useAuthStore();
+  const isTopUp = location.pathname === '/profile/topup';
 
   const getPageTitle = () => {
     switch (location.pathname) {
-      case '/profile/topup':
-        return 'Treasury';
       case '/profile/history':
-        return 'Ledger';
+        return 'Treasury Ledger';
       case '/profile/missives':
-        return 'Missives';
+        return 'Missives & Notices';
       case '/profile/support':
-        return 'Counsel';
+        return 'Counsel Live Support';
       case '/profile/admin-dashboard':
         return "Keeper's Archives";
       default:
-        // handle admin chat title which is dynamic
         if (location.pathname.startsWith('/profile/admin-chat/')) {
           return "Keeper's Archives";
         }
@@ -32,8 +30,8 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <LayoutWrapper>
-      <ScrollHeader title={getPageTitle()} />
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      {!isTopUp && <ScrollHeader title={getPageTitle()} />}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Outlet />
       </div>
       {role !== 'Admin' && <BottomNav />}

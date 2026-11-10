@@ -1,0 +1,183 @@
+.container {
+  max-width: 540px;
+  margin: 2rem auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.resultCard {
+  width: 100%;
+  background: var(--hy-bg-surface);
+  border: 1px solid var(--hy-border-card);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.cardSuccess {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.cardFailed {
+  border-color: rgba(244, 63, 94, 0.4);
+}
+
+.iconWrapper {
+  margin-bottom: 1.25rem;
+}
+
+.auraSuccess {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.15);
+  border: 2px solid var(--hy-emerald);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.4);
+}
+
+.iconSuccess {
+  color: var(--hy-emerald);
+}
+
+.auraFailed {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(244, 63, 94, 0.15);
+  border: 2px solid var(--hy-crimson);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(244, 63, 94, 0.4);
+}
+
+.iconFailed {
+  color: var(--hy-crimson);
+}
+
+.resultTitle {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+}
+
+.resultSubtitle {
+  font-size: 0.88rem;
+  color: var(--hy-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  max-width: 440px;
+}
+
+.syncIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--hy-cyan);
+  background: rgba(56, 189, 248, 0.1);
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-full);
+  margin-bottom: 1.25rem;
+}
+
+.spinIcon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.receiptBox {
+  width: 100%;
+  background: rgba(12, 16, 34, 0.7);
+  border: 1px solid var(--hy-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+  text-align: left;
+}
+
+.receiptRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.receiptLabel {
+  color: var(--hy-text-muted);
+}
+
+.receiptValue {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.statusBadge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.15rem 0.55rem;
+  border-radius: 4px;
+}
+
+.badgeSuccess {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--hy-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.badgeFailed {
+  background: rgba(244, 63, 94, 0.2);
+  color: var(--hy-crimson);
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.receiptDeliver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--hy-cyan);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.actionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.mainBtn, .subBtn {
+  width: 100%;
+}
+
+.supportHint {
+  font-size: 0.78rem;
+  color: var(--hy-text-dim);
+  margin-top: 1.5rem;
+}
+
+.supportLink {
+  color: var(--hy-gold);
+  font-weight: 600;
+  text-decoration: underline;
+}

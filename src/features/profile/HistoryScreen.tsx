@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollText, ArrowDown, RefreshCw, Clock, ExternalLink, XCircle, Loader2 } from 'lucide-react';
+import { 
+  ScrollText, 
+  RefreshCw, 
+  Clock, 
+  ExternalLink, 
+  XCircle, 
+  Loader2, 
+  Gem, 
+  CheckCircle2
+} from 'lucide-react';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
-import styles from './HistoryScreen.module.css';
-
+import { Button } from '../../components/Button/Button';
 import { apiClient } from '../../core/network/apiClient';
+import styles from './HistoryScreen.module.css';
 
 interface PaymentHistory {
   orderCode: string;
@@ -21,6 +30,7 @@ export const HistoryScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [cancellingOrderCode, setCancellingOrderCode] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
+  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'cancelled'>('all');
 
   const fetchHistory = async () => {
     setIsLoading(true);
@@ -52,7 +62,7 @@ export const HistoryScreen: React.FC = () => {
     const month = months[dt.getMonth()];
     const hours = dt.getHours().toString().padStart(2, '0');
     const minutes = dt.getMinutes().toString().padStart(2, '0');
-    return `${dt.getDate()} ${month}, ${hours}:${minutes}`;
+    return `${dt.getDate()} ${month} ${dt.getFullYear()}, ${hours}:${minutes}`;
   };
 
   const getRemainingSeconds = (createdAtStr: string): number => {
@@ -67,36 +77,16 @@ export const HistoryScreen: React.FC = () => {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const mapStatus = (status: string, isExpired: boolean) => {
-    if (isExpired) return 'Expired';
-    switch (status.toUpperCase()) {
-      case 'PAID':
-      case 'CONFIRMED': return 'Completed';
-      case 'CANCELLED': return 'Failed';
-      default: return 'Pending';
-    }
-  };
-
-  const getStatusColor = (status: string, isExpired: boolean) => {
-    if (isExpired) return 'var(--color-ink-muted, #8c7b6a)';
-    switch (status.toUpperCase()) {
-      case 'PAID':
-      case 'CONFIRMED': return '#1B5E20'; // Green
-      case 'CANCELLED': return 'var(--color-ruby)';
-      default: return '#b78103'; // Amber
-    }
-  };
-
   const handlePayNow = (checkoutUrl?: string) => {
     if (!checkoutUrl) {
-      alert('Payment link unavailable for this order. Please try a new order.');
+      alert('Payment link unavailable for this order. Please initiate a new order.');
       return;
     }
     window.location.href = checkoutUrl;
   };
 
   const handleCancelOrder = async (orderCode: string) => {
-    if (!window.confirm(`Are you sure you want to cancel tribute TXN-${orderCode}?`)) {
+    if (!window.confirm(`Are you sure you want to cancel pending order TXN-${orderCode}?`)) {
       return;
     }
 
@@ -112,138 +102,194 @@ export const HistoryScreen: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Failed to cancel order:', err);
-      alert(err.response?.data?.message || 'Failed to cancel the pending tribute.');
+      alert(err.response?.data?.message || 'Failed to cancel the pending order.');
     } finally {
       setCancellingOrderCode(null);
     }
   };
 
-  return (
-    <ParchmentBackground padding="1rem">
-      <div className={styles.headerRow}>
-        <ScrollText size={20} className={styles.headerIcon} />
-        <h2 className={styles.headerTitle}>Treasury Ledger</h2>
-        <button 
-          onClick={fetchHistory}
-          disabled={isLoading}
-          style={{
-            marginLeft: 'auto',
-            background: 'none',
-            border: 'none',
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            color: 'var(--color-ink-light)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            fontFamily: 'var(--font-heading)',
-            fontSize: '0.75rem',
-            padding: '0.2rem 0.5rem',
-          }}
-          title="Refresh and reconcile ledger records"
-        >
-          <RefreshCw size={13} style={{ animation: isLoading ? 'spin 1s linear infinite' : 'none' }} />
-          <span>{isLoading ? 'Syncing...' : 'Sync Ledger'}</span>
-        </button>
-      </div>
+  const filteredHistory = history.filter((txn) => {
+    const isCompleted = txn.status.toUpperCase() === 'CONFIRMED' || txn.status.toUpperCase() === 'PAID';
+    const isPending = txn.status.toUpperCase() === 'PENDING';
+    const remainingSec = getRemainingSeconds(txn.createdAt);
+    const isExpired = isPending && remainingSec <= 0;
 
-      <div className={styles.ledgerContainer}>
-        {/* Table Header */}
-        <div className={styles.tableHeader}>
-          <div className={styles.colDate}>Date / Order ID</div>
-          <div className={styles.colTithe}>Tithe</div>
-          <div className={styles.colAcquired}>Acquired</div>
+    if (statusFilter === 'completed') return isCompleted;
+    if (statusFilter === 'pending') return isPending && !isExpired;
+    if (statusFilter === 'cancelled') return txn.status.toUpperCase() === 'CANCELLED' || isExpired;
+    return true;
+  });
+
+  return (
+    <ParchmentBackground padding="1.5rem 1rem 3rem">
+      <div className={styles.container}>
+        
+        {/* Top Header & Reconcile Button */}
+        <div className={styles.topBar}>
+          <div>
+            <h2 className={styles.pageTitle}>Transaction Records</h2>
+            <p className={styles.pageSubtitle}>Official payment history and real-time order ledger</p>
+          </div>
+
+          <button 
+            onClick={fetchHistory}
+            disabled={isLoading}
+            className={styles.syncBtn}
+            title="Refresh and reconcile ledger records"
+          >
+            <RefreshCw size={14} className={isLoading ? styles.spinning : ''} />
+            <span>{isLoading ? 'Syncing...' : 'Sync Records'}</span>
+          </button>
         </div>
 
-        {/* Table Body */}
-        <div>
+        {/* Status Filter Tabs */}
+        <div className={styles.filterTabs}>
+          <button 
+            className={`${styles.filterBtn} ${statusFilter === 'all' ? styles.filterActive : ''}`}
+            onClick={() => setStatusFilter('all')}
+          >
+            All Orders ({history.length})
+          </button>
+          <button 
+            className={`${styles.filterBtn} ${statusFilter === 'completed' ? styles.filterActive : ''}`}
+            onClick={() => setStatusFilter('completed')}
+          >
+            Completed
+          </button>
+          <button 
+            className={`${styles.filterBtn} ${statusFilter === 'pending' ? styles.filterActive : ''}`}
+            onClick={() => setStatusFilter('pending')}
+          >
+            Pending Payment
+          </button>
+          <button 
+            className={`${styles.filterBtn} ${statusFilter === 'cancelled' ? styles.filterActive : ''}`}
+            onClick={() => setStatusFilter('cancelled')}
+          >
+            Cancelled / Expired
+          </button>
+        </div>
+
+        {/* Transactions List */}
+        <div className={styles.ledgerList}>
           {isLoading && history.length === 0 ? (
-            <div className={styles.emptyState}>Loading and reconciling ledger...</div>
-          ) : history.length === 0 ? (
-            <div className={styles.emptyState}>No entries found in the treasury ledger.</div>
+            <div className={styles.emptyState}>
+              <Loader2 size={32} className={styles.spinning} />
+              <p>Reconciling official records with PayOS gateway...</p>
+            </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className={styles.emptyState}>
+              <ScrollText size={42} className={styles.emptyIcon} />
+              <h4>No Transactions Found</h4>
+              <p>No orders match the selected filter. Visit the Treasury to acquire Gems.</p>
+              <Button onClick={() => window.location.href = '/profile/topup'}>Go to Treasury</Button>
+            </div>
           ) : (
-            history.map((txn, index) => {
-              const isEven = index % 2 === 0;
+            filteredHistory.map((txn) => {
               const isCompleted = txn.status.toUpperCase() === 'CONFIRMED' || txn.status.toUpperCase() === 'PAID';
               const isPending = txn.status.toUpperCase() === 'PENDING';
               const remainingSec = getRemainingSeconds(txn.createdAt);
               const isExpired = isPending && remainingSec <= 0;
 
               return (
-                <div key={txn.orderCode} className={`${styles.rowWrapper} ${isEven ? styles.evenRow : styles.oddRow}`}>
-                  <div className={styles.tableRow}>
-                    {/* Date / ID */}
-                    <div className={styles.colDate}>
-                      <div className={styles.dateText}>{formatDate(txn.createdAt)}</div>
-                      <div className={styles.idText}>TXN-{txn.orderCode}</div>
+                <div key={txn.orderCode} className={styles.txnCard}>
+                  
+                  {/* Card Header: Order Code & Date */}
+                  <div className={styles.cardHeader}>
+                    <div className={styles.orderIdentity}>
+                      <span className={styles.orderCode}>TXN-{txn.orderCode}</span>
+                      <span className={styles.orderDate}>{formatDate(txn.createdAt)}</span>
                     </div>
 
-                    {/* Tithe */}
-                    <div className={styles.colTithe}>
-                      <div className={styles.amountText}>{txn.amount.toLocaleString('vi-VN')} VND</div>
-                      <div className={styles.statusText} style={{ color: getStatusColor(txn.status, isExpired) }}>
-                        {mapStatus(txn.status, isExpired)}
-                      </div>
-                    </div>
-
-                    {/* Acquired / Remaining time */}
-                    <div className={styles.colAcquired}>
-                      {isCompleted && txn.gemsAmount > 0 ? (
-                        <div className={styles.acquiredGems}>
-                          <ArrowDown size={12} className={styles.acquiredIcon} />
-                          <span>+{txn.gemsAmount}</span>
-                        </div>
-                      ) : isPending && !isExpired ? (
-                        <div className={styles.pendingBadge} title="Time left to pay on PayOS">
-                          <Clock size={11} />
-                          <span>{formatCountdown(remainingSec)}</span>
-                        </div>
-                      ) : (
-                        <div className={styles.acquiredGems}>-</div>
+                    <div className={styles.statusWrap}>
+                      {isCompleted && (
+                        <span className={styles.badgeCompleted}>
+                          <CheckCircle2 size={13} />
+                          <span>Delivered</span>
+                        </span>
+                      )}
+                      {isPending && !isExpired && (
+                        <span className={styles.badgePending}>
+                          <Clock size={13} />
+                          <span>Pending ({formatCountdown(remainingSec)})</span>
+                        </span>
+                      )}
+                      {(txn.status.toUpperCase() === 'CANCELLED' || isExpired) && (
+                        <span className={styles.badgeFailed}>
+                          <XCircle size={13} />
+                          <span>{isExpired ? 'Expired' : 'Cancelled'}</span>
+                        </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Pending Action Bar for active pending orders */}
-                  {isPending && !isExpired && (
-                    <div className={styles.pendingActionBar}>
-                      <div className={styles.expiryNote}>
-                        <Clock size={12} className={styles.clockIcon} />
-                        <span>PayOS window: {formatCountdown(remainingSec)} remaining</span>
+                  {/* Card Body: Items Acquired & Tithe Amount */}
+                  <div className={styles.cardBody}>
+                    <div className={styles.rewardCol}>
+                      <div className={styles.gemIconCircle}>
+                        <Gem size={20} className={styles.gemIcon} />
                       </div>
-                      <div className={styles.actionButtonGroup}>
+                      <div className={styles.rewardDetails}>
+                        <div className={styles.gemTotal}>
+                          {txn.gemsAmount > 0 ? `+${txn.gemsAmount.toLocaleString('en-US')} Gems` : 'Pact Package'}
+                        </div>
+                        <span className={styles.deliveryNote}>
+                          {isCompleted ? 'Dispatched to In-Game Mail' : 'Awaiting Payment Clearance'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={styles.amountCol}>
+                      <span className={styles.amountLabel}>Paid Tithe</span>
+                      <span className={styles.amountValue}>
+                        {txn.amount.toLocaleString('vi-VN')} VND
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Action Bar for Pending Orders */}
+                  {isPending && !isExpired && (
+                    <div className={styles.pendingBar}>
+                      <div className={styles.pendingTimer}>
+                        <Clock size={13} className={styles.clockPulse} />
+                        <span>PayOS window closes in: <strong>{formatCountdown(remainingSec)}</strong></span>
+                      </div>
+
+                      <div className={styles.actionBtns}>
                         {txn.checkoutUrl && (
                           <button
                             type="button"
-                            className={styles.payNowBtn}
+                            className={styles.payBtn}
                             onClick={() => handlePayNow(txn.checkoutUrl)}
-                            title="Continue payment on PayOS"
                           >
-                            <ExternalLink size={12} />
-                            <span>Pay Now</span>
+                            <ExternalLink size={13} />
+                            <span>Pay with VietQR</span>
                           </button>
                         )}
+
                         <button
                           type="button"
                           className={styles.cancelBtn}
                           onClick={() => handleCancelOrder(txn.orderCode)}
                           disabled={cancellingOrderCode === txn.orderCode}
-                          title="Cancel this pending tribute immediately"
                         >
                           {cancellingOrderCode === txn.orderCode ? (
-                            <Loader2 size={12} className={styles.spinning} />
+                            <Loader2 size={13} className={styles.spinning} />
                           ) : (
-                            <XCircle size={12} />
+                            <XCircle size={13} />
                           )}
-                          <span>Cancel</span>
+                          <span>Cancel Order</span>
                         </button>
                       </div>
                     </div>
                   )}
+
                 </div>
               );
             })
           )}
         </div>
+
       </div>
     </ParchmentBackground>
   );

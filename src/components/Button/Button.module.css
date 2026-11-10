@@ -1,8 +1,8 @@
-.button {
+.btn {
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius-sm);
   font-family: var(--font-heading);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -10,43 +10,88 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  letter-spacing: 1px;
+  letter-spacing: 0.75px;
+  position: relative;
+  user-select: none;
 }
 
-.button:disabled {
+.btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
+/* Primary Button (HoYoverse Radiant Gold) */
 .primary {
-  background-color: var(--color-leather);
-  color: var(--color-gold);
-  border: 1px solid var(--color-gold-dark);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  background: linear-gradient(135deg, #ffd778 0%, #f2bf4e 50%, #d49a2a 100%);
+  color: #12182c;
+  border: 1px solid #ffe599;
+  box-shadow: 0 4px 16px rgba(242, 191, 78, 0.35);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .primary:hover:not(:disabled) {
-  background-color: var(--color-leather-dark);
-  border-color: var(--color-gold);
-  box-shadow: 0 6px 12px rgba(207, 168, 88, 0.2);
+  background: linear-gradient(135deg, #ffe08a 0%, #f7cb5e 50%, #e5a733 100%);
+  box-shadow: 0 6px 24px rgba(242, 191, 78, 0.55);
+  transform: translateY(-1px);
 }
 
+.primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Secondary Button (Glass Dark Navy) */
 .secondary {
-  background-color: transparent;
-  color: var(--color-ink);
-  border: 1px solid var(--color-ink);
+  background: rgba(22, 29, 56, 0.75);
+  color: var(--hy-text-primary);
+  border: 1px solid var(--hy-border-card);
+  backdrop-filter: blur(8px);
 }
 
 .secondary:hover:not(:disabled) {
-  background-color: rgba(0,0,0,0.05);
+  background: rgba(30, 40, 75, 0.85);
+  border-color: var(--hy-gold);
+  color: var(--hy-gold);
+  transform: translateY(-1px);
 }
 
+/* Danger Button (Crimson) */
 .danger {
-  background-color: var(--color-ruby);
-  color: var(--color-parchment);
-  border: 1px solid var(--color-parchment-dark);
+  background: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #e11d48 100%);
+  color: #ffffff;
+  border: 1px solid #fda4af;
+  box-shadow: 0 4px 16px rgba(244, 63, 94, 0.3);
 }
 
 .danger:hover:not(:disabled) {
-  background-color: #681515;
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+  box-shadow: 0 6px 20px rgba(244, 63, 94, 0.45);
+}
+
+/* Ghost Button */
+.ghost {
+  background: transparent;
+  color: var(--hy-text-secondary);
+  border: 1px solid transparent;
+}
+
+.ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--hy-gold);
+}
+
+/* Loader spinner */
+.loader {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

@@ -1,14 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, Home, Loader2 } from 'lucide-react';
+import { 
+  CheckCircle, 
+  XCircle, 
+  Loader2, 
+  ScrollText, 
+  Gem, 
+  ShieldCheck
+} from 'lucide-react';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import { Button } from '../../components/Button/Button';
+import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../core/network/apiClient';
-import styles from './CheckoutScreen.module.css';
+import styles from './PaymentResultScreen.module.css';
 
 export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSuccess }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { username, playerId } = useAuthStore();
 
   // Parse query params from PayOS redirect
   const searchParams = new URLSearchParams(location.search);
@@ -36,42 +45,101 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
   }, [orderCode, isSuccess, payOsStatus]);
 
   return (
-    <ParchmentBackground>
-      <div className={styles.container} style={{ justifyContent: 'center', alignItems: 'center', height: '100vh', display: 'flex' }}>
-        <div className={styles.receiptCard} style={{ maxWidth: '400px', textAlign: 'center' }}>
-          {isSuccess ? (
-            <>
-              <CheckCircle size={64} color="#1b5e20" style={{ margin: '0 auto 1rem' }} />
-              <h2 className={styles.receiptTitle} style={{ color: '#1b5e20' }}>Tribute Accepted!</h2>
-              <p style={{ margin: '1rem 0', color: '#5c4b3a' }}>
-                Your payment was successful (Order: {orderCode}). The Gems and items have been magically added to your treasury.
-              </p>
-              {isSyncing && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#8c7b6a', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                  <Loader2 size={16} className={styles.spinning} />
-                  <span>Sealing transaction into kingdom archives...</span>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <XCircle size={64} color="#d32f2f" style={{ margin: '0 auto 1rem' }} />
-              <h2 className={styles.receiptTitle} style={{ color: '#d32f2f' }}>Pact Cancelled</h2>
-              <p style={{ margin: '1rem 0', color: '#5c4b3a' }}>
-                The transaction was disrupted or cancelled. No gold was taken from your vault.
-              </p>
-            </>
+    <ParchmentBackground padding="2rem 1rem">
+      <div className={styles.container}>
+        <div className={`${styles.resultCard} ${isSuccess ? styles.cardSuccess : styles.cardFailed}`}>
+          
+          {/* Status Icon with Glowing Aura */}
+          <div className={styles.iconWrapper}>
+            {isSuccess ? (
+              <div className={styles.auraSuccess}>
+                <CheckCircle size={64} className={styles.iconSuccess} />
+              </div>
+            ) : (
+              <div className={styles.auraFailed}>
+                <XCircle size={64} className={styles.iconFailed} />
+              </div>
+            )}
+          </div>
+
+          <h2 className={styles.resultTitle}>
+            {isSuccess ? 'Payment Successful!' : 'Payment Cancelled'}
+          </h2>
+
+          <p className={styles.resultSubtitle}>
+            {isSuccess 
+              ? 'Your tribute has been acknowledged. In-game currency and rewards have been delivered directly to your account.' 
+              : 'The payment process was cancelled or timed out. No currency was deducted.'}
+          </p>
+
+          {isSyncing && (
+            <div className={styles.syncIndicator}>
+              <Loader2 size={16} className={styles.spinIcon} />
+              <span>Syncing with Game Server & PayOS...</span>
+            </div>
           )}
 
-          <div style={{ marginTop: '2rem' }}>
-            <p style={{ fontStyle: 'italic', color: '#8c7b6a', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              If you are on a mobile device, you can safely close this browser tab and return to the game.
-            </p>
-            <Button onClick={() => navigate('/profile/history')}>
-              <Home size={18} style={{ marginRight: '0.5rem', display: 'inline-block', verticalAlign: 'middle' }} />
-              Return to Ledger
+          {/* Transaction Metadata Box */}
+          <div className={styles.receiptBox}>
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Transaction Status</span>
+              <span className={`${styles.statusBadge} ${isSuccess ? styles.badgeSuccess : styles.badgeFailed}`}>
+                {isSuccess ? 'CONFIRMED / PAID' : 'CANCELLED'}
+              </span>
+            </div>
+
+            {orderCode && (
+              <div className={styles.receiptRow}>
+                <span className={styles.receiptLabel}>Order Code</span>
+                <span className={styles.receiptValue}>{orderCode}</span>
+              </div>
+            )}
+
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Target Character</span>
+              <span className={styles.receiptValue}>{username || 'Player'}</span>
+            </div>
+
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Player ID</span>
+              <span className={styles.receiptValue}>{playerId || 'Current Account'}</span>
+            </div>
+
+            <div className={styles.receiptRow}>
+              <span className={styles.receiptLabel}>Delivery Channel</span>
+              <span className={styles.receiptDeliver}>
+                <ShieldCheck size={14} />
+                <span>In-Game Mailbox & Inventory</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className={styles.actionButtons}>
+            <Button 
+              variant="primary" 
+              onClick={() => navigate('/profile/topup')}
+              className={styles.mainBtn}
+            >
+              <Gem size={18} />
+              <span>Return to Treasury</span>
+            </Button>
+
+            <Button 
+              variant="secondary" 
+              onClick={() => navigate('/profile/history')}
+              className={styles.subBtn}
+            >
+              <ScrollText size={18} />
+              <span>View Ledger History</span>
             </Button>
           </div>
+
+          <div className={styles.supportHint}>
+            <span>Have questions regarding your order? </span>
+            <a href="/profile/support" className={styles.supportLink}>Contact Counsel Support</a>
+          </div>
+
         </div>
       </div>
     </ParchmentBackground>
