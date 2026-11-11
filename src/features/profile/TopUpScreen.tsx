@@ -376,29 +376,31 @@ export const TopUpScreen: React.FC = () => {
                       </div>
 
                       {/* Real Inclusions from Backend */}
-                      {hasInclusions ? (
-                        <div className={styles.inclusionsRow}>
-                          {pkg.unitNames?.map((unit, i) => (
-                            <span key={`u-${i}`} className={styles.inclusionChip}>
-                              ⚔️ {unit}
-                            </span>
-                          ))}
-                          {pkg.weaponNames?.map((wpn, i) => (
-                            <span key={`w-${i}`} className={styles.inclusionChip}>
-                              🛡️ {wpn}
-                            </span>
-                          ))}
-                          {pkg.trinketNames?.map((trk, i) => (
-                            <span key={`t-${i}`} className={styles.inclusionChip}>
-                              💍 {trk}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className={styles.pureGemsNote}>
-                          Standard Gem Top-Up Package
-                        </div>
-                      )}
+                      <div className={styles.inclusionsArea}>
+                        {hasInclusions ? (
+                          <div className={styles.inclusionsRow}>
+                            {pkg.unitNames?.map((unit, i) => (
+                              <span key={`u-${i}`} className={styles.inclusionChip}>
+                                ⚔️ {unit}
+                              </span>
+                            ))}
+                            {pkg.weaponNames?.map((wpn, i) => (
+                              <span key={`w-${i}`} className={styles.inclusionChip}>
+                                🛡️ {wpn}
+                              </span>
+                            ))}
+                            {pkg.trinketNames?.map((trk, i) => (
+                              <span key={`t-${i}`} className={styles.inclusionChip}>
+                                💍 {trk}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className={styles.pureGemsNote}>
+                            Standard Gem Top-Up Package
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Buy / Price Button */}
