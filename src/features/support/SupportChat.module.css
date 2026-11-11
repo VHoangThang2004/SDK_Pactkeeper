@@ -1,13 +1,33 @@
-.chatContainer {
+.chatWrapper {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  height: 620px;
+  max-height: calc(100vh - 280px);
+  min-height: 480px;
   display: flex;
   flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .chatWrapper {
+    height: calc(100vh - 230px);
+    min-height: 420px;
+  }
+}
+
+.chatContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--hy-bg-surface);
+  border: 1px solid var(--hy-border-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  position: relative;
+  width: 100%;
   height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--hy-bg-deep);
 }
 
 .botHeader {
@@ -17,6 +37,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .botAvatar {
@@ -39,6 +60,13 @@
 .botInfo {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+}
+
+.botTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .botTitle {
@@ -46,7 +74,18 @@
   font-size: 0.95rem;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 2px;
+  letter-spacing: 0.5px;
+}
+
+.officialBadge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  background: rgba(242, 191, 78, 0.2);
+  border: 1px solid var(--hy-border-gold);
+  color: var(--hy-gold);
+  padding: 0.05rem 0.4rem;
+  border-radius: 3px;
+  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
@@ -79,10 +118,55 @@
 }
 
 .emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+  margin: auto 0;
+  padding: 2.5rem 1.5rem;
+  gap: 0.75rem;
+}
+
+.emptyBotWrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(242, 191, 78, 0.1);
+  border: 1px solid var(--hy-border-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+}
+
+.emptyBotIcon {
+  color: var(--hy-gold);
+}
+
+.emptyState h4 {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.emptyState p {
+  font-size: 0.82rem;
   color: var(--hy-text-muted);
-  font-size: 0.88rem;
-  margin-top: 3rem;
+  max-width: 380px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.emptyHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--hy-cyan);
+  margin-top: 0.5rem;
 }
 
 .messageWrapper {
@@ -117,6 +201,7 @@
   box-shadow: var(--shadow-sm);
   font-size: 0.88rem;
   line-height: 1.45;
+  word-break: break-word;
 }
 
 .messageWrapper.self .messageBubble {
@@ -155,6 +240,7 @@
   background: var(--hy-bg-surface);
   border-top: 1px solid var(--hy-border-card);
   position: relative;
+  flex-shrink: 0;
 }
 
 .uploadingBar {

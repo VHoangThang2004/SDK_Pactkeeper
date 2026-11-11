@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BellOff, CheckCircle, XCircle, Gift, Info } from 'lucide-react';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import { apiClient } from '../../core/network/apiClient';
+import { supportHubService } from '../support/services/SupportHubService';
+import { useSyncStore } from '../../store/syncStore';
 import styles from './MissivesScreen.module.css';
 
 interface NotificationModel {
@@ -16,31 +18,86 @@ interface NotificationModel {
 export const MissivesScreen: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationModel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { setUnreadCount } = useSyncStore();
 
-  const fetchNotifications = async () => {
-    setIsLoading(true);
+  const fetchNotifications = useCallback(async (isInitial = false) => {
+    if (isInitial) setIsLoading(true);
     try {
       const response = await apiClient.get<NotificationModel[]>('/api/notification');
-      setNotifications(response.data || []);
+      if (response.data && Array.isArray(response.data)) {
+        setNotifications(response.data);
+        const unread = response.data.filter((n) => !n.read).length;
+        setUnreadCount(unread);
+      }
     } catch (error) {
-      console.error('Failed to fetch notifications', error);
+      console.warn('Failed to fetch notifications:', error);
     } finally {
-      setIsLoading(false);
+      if (isInitial) setIsLoading(false);
     }
-  };
+  }, [setUnreadCount]);
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    let isMounted = true;
+
+    // 1. Initial fetch
+    fetchNotifications(true);
+
+    // 2. Connect hub
+    supportHubService.connect();
+
+    // 3. Real-time events
+    const unsubNotif = supportHubService.onEvent('ReceiveNotification', () => {
+      if (isMounted) fetchNotifications(false);
+    });
+
+    const unsubProfile = supportHubService.onEvent('ReceiveProfileUpdate', () => {
+      if (isMounted) fetchNotifications(false);
+    });
+
+    const unsubMsg = supportHubService.onMessage(() => {
+      if (isMounted) fetchNotifications(false);
+    });
+
+    const unsubRecon = supportHubService.onReconnected(() => {
+      if (isMounted) fetchNotifications(false);
+    });
+
+    // 4. Smart background sync (every 6s) while active on Missives
+    const interval = setInterval(() => {
+      if (isMounted) fetchNotifications(false);
+    }, 6000);
+
+    // 5. Window focus sync
+    const handleFocus = () => {
+      if (isMounted) fetchNotifications(false);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      isMounted = false;
+      unsubNotif();
+      unsubProfile();
+      unsubMsg();
+      unsubRecon();
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [fetchNotifications]);
 
   const markAsRead = async (note: NotificationModel) => {
     if (note.read) return;
     try {
       const response = await apiClient.post(`/api/notification/${note.id}/read`);
       if (response.status === 200) {
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === note.id ? { ...n, read: true } : n))
-        );
+        setNotifications((prev) => {
+          const next = prev.map((n) => (n.id === note.id ? { ...n, read: true } : n));
+          const unread = next.filter((n) => !n.read).length;
+          setUnreadCount(unread);
+          return next;
+        });
       }
     } catch (error) {
       console.error('Failed to mark as read', error);
@@ -51,7 +108,11 @@ export const MissivesScreen: React.FC = () => {
     try {
       const response = await apiClient.post('/api/notification/read-all');
       if (response.status === 200) {
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        setNotifications((prev) => {
+          const next = prev.map((n) => ({ ...n, read: true }));
+          setUnreadCount(0);
+          return next;
+        });
       }
     } catch (error) {
       console.error('Failed to mark all as read', error);

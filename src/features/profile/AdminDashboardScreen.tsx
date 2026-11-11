@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { LogOut, User, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../core/network/apiClient';
+import { supportHubService } from '../support/services/SupportHubService';
 import styles from './AdminDashboardScreen.module.css';
 
 interface ActiveChatPlayer {
@@ -19,24 +20,59 @@ export const AdminDashboardScreen: React.FC = () => {
   const [activePlayers, setActivePlayers] = useState<ActiveChatPlayer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchPlayers = async () => {
-      try {
-        const response = await apiClient.get<ActiveChatPlayer[]>('/api/support/admin/players');
+  const fetchPlayers = useCallback(async () => {
+    try {
+      const response = await apiClient.get<ActiveChatPlayer[]>('/api/support/admin/players');
+      if (response.data) {
         setActivePlayers(response.data);
-      } catch (err) {
-        console.error('Error fetching active players:', err);
-      } finally {
-        setIsLoading(false);
       }
-    };
-    fetchPlayers();
-    
-    // Optional: Refresh periodically or use SignalR to listen for new active players.
-    // For now, simple polling every 30s.
-    const interval = setInterval(fetchPlayers, 30000);
-    return () => clearInterval(interval);
+    } catch (err) {
+      console.error('Error fetching active players:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    // 1. Initial fetch
+    fetchPlayers();
+
+    // 2. Connect hub
+    supportHubService.connect();
+
+    // 3. Real-time trigger on new incoming messages
+    const unsubMsg = supportHubService.onMessage(() => {
+      if (isMounted) fetchPlayers();
+    });
+
+    const unsubRecon = supportHubService.onReconnected(() => {
+      if (isMounted) fetchPlayers();
+    });
+
+    // 4. Fallback interval (6s)
+    const interval = setInterval(() => {
+      if (isMounted) fetchPlayers();
+    }, 6000);
+
+    // 5. Window focus
+    const handleFocus = () => {
+      if (isMounted) fetchPlayers();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      isMounted = false;
+      unsubMsg();
+      unsubRecon();
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [fetchPlayers]);
 
   const formatTime = (isoString: string) => {
     const dt = new Date(isoString);

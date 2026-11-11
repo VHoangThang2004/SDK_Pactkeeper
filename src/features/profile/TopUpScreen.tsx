@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ShieldCheck, 
   Gem, 
@@ -14,6 +14,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import { useAuthStore } from '../../store/authStore';
+import { useSyncStore } from '../../store/syncStore';
 import { GemArt } from '../../components/GameIcons/GemArt';
 import { apiClient } from '../../core/network/apiClient';
 import styles from './TopUpScreen.module.css';
@@ -120,6 +121,37 @@ export const TopUpScreen: React.FC = () => {
 
     fetchData();
   }, [username, playerId]);
+
+  // Real-time synchronization when payment is completed or profile update event received
+  const { profileUpdateTimestamp } = useSyncStore();
+
+  const syncProfileOnly = useCallback(async () => {
+    try {
+      const res = await apiClient.get<PlayerProfile>('/api/PlayerProfile');
+      if (res.data) {
+        const raw = res.data;
+        setProfile((prev) => ({
+          ...prev,
+          gems: raw.gems ?? prev.gems,
+          gold: raw.gold ?? prev.gold,
+          level: raw.level ?? prev.level,
+          experience: raw.experience ?? prev.experience,
+        }));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    syncProfileOnly();
+  }, [profileUpdateTimestamp, syncProfileOnly]);
+
+  useEffect(() => {
+    const handleFocus = () => syncProfileOnly();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [syncProfileOnly]);
 
   // Filter packs based on real backend inclusions
   const filteredPacks = packs.filter((pack) => {

@@ -182,15 +182,11 @@ export const LoginScreen: React.FC = () => {
                 <div className={styles.benefitsBox}>
                   <div className={styles.benefitItem}>
                     <CheckCircle2 size={14} className={styles.checkIcon} />
-                    <span>Real-time sync with Backend (http://localhost:5276)</span>
-                  </div>
-                  <div className={styles.benefitItem}>
-                    <CheckCircle2 size={14} className={styles.checkIcon} />
                     <span>Instant automatic in-game delivery</span>
                   </div>
                   <div className={styles.benefitItem}>
                     <CheckCircle2 size={14} className={styles.checkIcon} />
-                    <span>Official PayOS payment gateway integration</span>
+                    <span>Official payment gateway integration</span>
                   </div>
                 </div>
               </div>
@@ -244,13 +240,6 @@ export const LoginScreen: React.FC = () => {
           </div>
 
           {/* Server Status Footer */}
-          <div className={styles.serverStatusFooter}>
-            <div className={styles.statusIndicator}>
-              <span className={styles.statusDot} />
-              <span>Backend Target: http://localhost:5276</span>
-            </div>
-            <span className={styles.versionTag}>SDK Live</span>
-          </div>
         </div>
 
       </div>

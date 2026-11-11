@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Gem, 
@@ -11,6 +11,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useSyncStore } from '../../store/syncStore';
 import styles from './LayoutWrapper.module.css';
 
 interface LayoutWrapperProps {
@@ -19,8 +20,14 @@ interface LayoutWrapperProps {
 
 export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   const { username, playerId, role, logout } = useAuthStore();
+  const { unreadCount, hasUnreadCounsel, isRealTimeOnline, startGlobalSync, setHasUnreadCounsel } = useSyncStore();
   const navigate = useNavigate();
   const isAdmin = role === 'Admin' || role === 'Technical Support';
+
+  useEffect(() => {
+    const cleanup = startGlobalSync();
+    return cleanup;
+  }, [startGlobalSync]);
 
   const displayUid = playerId ? (playerId.length > 8 ? playerId.slice(-8).toUpperCase() : playerId) : '';
 
@@ -72,13 +79,20 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
                 >
                   <Mail size={16} />
                   <span>Missives</span>
+                  {unreadCount > 0 && (
+                    <span className={styles.navBadge}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </NavLink>
                 <NavLink 
                   to="/profile/support" 
                   className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navActive : ''}`}
+                  onClick={() => setHasUnreadCounsel(false)}
                 >
                   <MessageSquare size={16} />
                   <span>Counsel</span>
+                  {hasUnreadCounsel && <span className={styles.navDot} title="New answer from Keeper of Records" />}
                 </NavLink>
               </>
             )}
@@ -97,7 +111,15 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
               <div className={styles.userInfo}>
                 <div className={styles.userNameRow}>
                   <span className={styles.userName}>{username || 'Player'}</span>
-                  <span className={styles.serverPill}>Official Server</span>
+                  <span className={styles.serverPill}>
+                    <span
+                      className={`${styles.statusDot} ${
+                        isRealTimeOnline ? styles.statusOnline : styles.statusOffline
+                      }`}
+                      title={isRealTimeOnline ? 'Real-time SignalR active' : 'Polling sync active'}
+                    />
+                    Official Server
+                  </span>
                 </div>
                 {displayUid && <span className={styles.uidText}>ID: {displayUid}</span>}
               </div>

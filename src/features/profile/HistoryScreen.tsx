@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ScrollText, 
   RefreshCw, 
@@ -12,6 +12,7 @@ import {
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import { Button } from '../../components/Button/Button';
 import { apiClient } from '../../core/network/apiClient';
+import { useSyncStore } from '../../store/syncStore';
 import styles from './HistoryScreen.module.css';
 
 interface PaymentHistory {
@@ -32,21 +33,47 @@ export const HistoryScreen: React.FC = () => {
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'cancelled'>('all');
 
-  const fetchHistory = async () => {
-    setIsLoading(true);
+  const { profileUpdateTimestamp } = useSyncStore();
+
+  const fetchHistory = useCallback(async (isInitial = false) => {
+    if (isInitial) setIsLoading(true);
     try {
       const response = await apiClient.get<PaymentHistory[]>('/api/payment/history');
       setHistory(response.data || []);
     } catch (err) {
       console.error('Error fetching history:', err);
     } finally {
-      setIsLoading(false);
+      if (isInitial) setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    fetchHistory(true);
+  }, [fetchHistory]);
+
+  // Re-fetch when real-time profile update event arrives
+  useEffect(() => {
+    fetchHistory(false);
+  }, [profileUpdateTimestamp, fetchHistory]);
+
+  // Window focus listener
+  useEffect(() => {
+    const handleFocus = () => fetchHistory(false);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchHistory]);
+
+  // Auto-poll every 5s while there is at least one pending order
+  useEffect(() => {
+    const hasPending = history.some((h) => h.status.toLowerCase() === 'pending');
+    if (!hasPending) return;
+
+    const interval = setInterval(() => {
+      fetchHistory(false);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [history, fetchHistory]);
 
   // Update current time every second to drive real-time expiration countdown
   useEffect(() => {
@@ -132,7 +159,7 @@ export const HistoryScreen: React.FC = () => {
           </div>
 
           <button 
-            onClick={fetchHistory}
+            onClick={() => fetchHistory(true)}
             disabled={isLoading}
             className={styles.syncBtn}
             title="Refresh and reconcile ledger records"

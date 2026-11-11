@@ -1,20 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Paperclip, Send } from 'lucide-react';
 import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
 import { apiClient } from '../../core/network/apiClient';
-import { supportHubService } from '../support/services/SupportHubService';
+import { supportHubService, type SupportMessageDto } from '../support/services/SupportHubService';
 import styles from './AdminChatScreen.module.css';
 import chatStyles from '../support/SupportChat.module.css'; // Reuse chat styles
 
-interface Message {
-  id: string;
-  sender: string;
-  senderName: string;
-  text: string;
-  attachmentUrl: string;
-  createdAt: string;
-}
+type Message = SupportMessageDto;
 
 export const AdminChatScreen: React.FC = () => {
   const { playerId } = useParams<{ playerId: string }>();
@@ -27,33 +20,74 @@ export const AdminChatScreen: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const syncChatHistory = useCallback(async () => {
+    if (!playerId) return;
+    try {
+      const response = await apiClient.get<Message[]>(`/api/support/admin/chat/${playerId}`);
+      if (response.data && Array.isArray(response.data)) {
+        setMessages((prev) => {
+          if (
+            prev.length === response.data.length &&
+            prev[prev.length - 1]?.id === response.data[response.data.length - 1]?.id
+          ) {
+            return prev;
+          }
+          return response.data;
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to sync admin chat history:', error);
+    }
+  }, [playerId]);
+
   useEffect(() => {
     if (!playerId) return;
+    let isMounted = true;
 
-    const initChat = async () => {
-      try {
-        const response = await apiClient.get<Message[]>(`/api/support/admin/chat/${playerId}`);
-        setMessages(response.data || []);
-        
-        await supportHubService.connect();
-        supportHubService.onMessageReceived((receivedPlayerId, msg) => {
-          if (receivedPlayerId === playerId) {
-            setMessages((prev) => {
-              if (prev.some(m => m.id === msg.id)) return prev;
-              return [...prev, msg];
-            });
-          }
+    // 1. Initial fetch
+    syncChatHistory();
+
+    // 2. Connect hub
+    supportHubService.connect();
+
+    // 3. Real-time message listener
+    const unsubMsg = supportHubService.onMessage((receivedPlayerId, msg) => {
+      if (!isMounted) return;
+      if (receivedPlayerId === playerId) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
         });
-      } catch (error) {
-        console.error('Failed to load chat', error);
       }
+    });
+
+    // 4. Reconnect sync
+    const unsubRecon = supportHubService.onReconnected(() => {
+      if (isMounted) syncChatHistory();
+    });
+
+    // 5. Smart sync polling fallback (every 4s)
+    const interval = setInterval(() => {
+      if (isMounted) syncChatHistory();
+    }, 4000);
+
+    // 6. Window focus listener
+    const handleFocus = () => {
+      if (isMounted) syncChatHistory();
     };
-    initChat();
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
 
     return () => {
-      supportHubService.disconnect();
+      isMounted = false;
+      unsubMsg();
+      unsubRecon();
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
-  }, [playerId]);
+  }, [playerId, syncChatHistory]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -124,9 +158,9 @@ export const AdminChatScreen: React.FC = () => {
 
   return (
     <ParchmentBackground padding="0">
-      <div className={chatStyles.chatContainer}>
-        
-        {/* Admin Header override */}
+      <div className={chatStyles.chatWrapper}>
+        <div className={chatStyles.chatContainer}>
+          {/* Admin Header override */}
         <div className={styles.adminHeader}>
           <button onClick={() => navigate('/profile/admin-dashboard')} className={styles.backBtn}>
             <ArrowLeft size={24} />
@@ -217,6 +251,7 @@ export const AdminChatScreen: React.FC = () => {
         </div>
 
       </div>
-    </ParchmentBackground>
-  );
+    </div>
+  </ParchmentBackground>
+);
 };
