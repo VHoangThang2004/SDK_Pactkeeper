@@ -1,116 +1,35 @@
-.headerRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid var(--hy-border-card);
-  padding-bottom: 0.75rem;
-}
-
-.title {
-  font-family: var(--font-heading);
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0;
-}
-
-.logoutBtn {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--hy-crimson);
-  font-family: var(--font-heading);
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 0.35rem 0.65rem;
-  border-radius: var(--radius-sm);
-  background: rgba(244, 63, 94, 0.1);
-  border: 1px solid rgba(244, 63, 94, 0.25);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.logoutBtn:hover {
-  background: rgba(244, 63, 94, 0.2);
-}
-
-.listContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.emptyState {
-  text-align: center;
-  color: var(--hy-text-muted);
-  font-style: italic;
-  padding: 3rem 1.5rem;
-  background: var(--hy-bg-surface);
-  border: 1px solid var(--hy-border-card);
-  border-radius: var(--radius-md);
-}
-
-.playerCard {
-  background: var(--hy-bg-surface);
-  border: 1px solid var(--hy-border-card);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-card);
-  padding: 1rem 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.playerCard:hover {
-  background: var(--hy-bg-card-hover);
-  border-color: var(--hy-border-gold);
-  transform: translateX(3px);
-}
-
-.avatarWrapper {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1.5px solid var(--hy-gold);
-  background: #0d1222;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.avatar {
+.desktopWorkspace {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  display: block;
 }
 
-.infoCol {
-  flex: 1;
+.workspaceCard {
+  width: 100%;
+  height: clamp(540px, 72dvh, 760px);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
 }
 
-.playerName {
-  font-family: var(--font-heading);
-  font-size: 1rem;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.previewText {
-  font-size: 0.82rem;
-  color: var(--hy-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 280px;
-}
-
-.actionCol {
+.emptyPane {
+  height: 100%;
   display: flex;
   align-items: center;
-  color: var(--hy-gold);
+  justify-content: center;
+  padding: var(--spacing-6);
+}
+
+.mobileInbox {
+  width: 100%;
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .desktopWorkspace {
+    display: none;
+  }
+
+  .mobileInbox {
+    display: block;
+  }
 }

@@ -1,49 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
-@import './theme.css';
+@layer reset, astryx-base, astryx-theme, product;
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@layer reset {
+  html,
+  body {
+    background-color: var(--color-background-body);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-html, body {
-  background-color: var(--hy-bg-deep);
-  color: var(--hy-text-primary);
-  font-family: var(--font-body);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .heading-font {
+    font-family: var(--font-family-heading);
+    letter-spacing: 0.4px;
+    color: var(--color-text-primary);
+  }
 
-h1, h2, h3, h4, h5, h6, .heading-font {
-  font-family: var(--font-heading);
-  letter-spacing: 0.5px;
-  color: var(--hy-text-primary);
-}
+  a:not([class*='astryx-']) {
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: all var(--duration-fast, 150ms) ease;
+  }
 
-a {
-  color: var(--hy-gold);
-  text-decoration: none;
-  transition: all var(--transition-fast);
-}
-
-a:hover {
-  color: var(--hy-gold-bright);
-}
-
-button {
-  font-family: var(--font-body);
-  cursor: pointer;
-  border: none;
-  outline: none;
-  background: none;
-}
-
-ul {
-  list-style: none;
+  a:not([class*='astryx-']):hover {
+    color: var(--color-text-accent);
+  }
 }
 
 /* Custom modern gaming scrollbar */
@@ -53,33 +43,14 @@ ul {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--hy-bg-deep);
+  background: var(--color-background-body);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(242, 191, 78, 0.25);
+  background: var(--color-accent-muted);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--hy-gold);
-}
-
-/* Common utility classes */
-.flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gold-gradient-text {
-  background: linear-gradient(135deg, #fff2cc 0%, #f2bf4e 50%, #c99632 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.cyan-gradient-text {
-  background: linear-gradient(135deg, #e0f7fa 0%, #38bdf8 50%, #0284c7 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background: var(--color-accent);
 }

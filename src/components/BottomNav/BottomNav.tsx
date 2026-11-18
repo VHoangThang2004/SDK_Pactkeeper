@@ -1,53 +1,82 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Gem, ScrollText, Mail, MessageSquare } from 'lucide-react';
-import styles from './BottomNav.module.css';
-import { useAuthStore } from '../../store/authStore';
+import { Lock } from 'lucide-react';
+import { Badge } from '@astryxdesign/core/Badge';
+import { StatusDot } from '@astryxdesign/core/StatusDot';
+import { Text } from '@astryxdesign/core/Text';
+import { useAuthStore, isStaffRole } from '../../store/authStore';
 import { useSyncStore } from '../../store/syncStore';
+import { PLAYER_NAV_ITEMS } from '../navigation/playerNavItems';
+import styles from './BottomNav.module.css';
 
 export const BottomNav: React.FC = () => {
-  const { role } = useAuthStore();
+  const { isLoggedIn, role, openAuthPrompt } = useAuthStore();
   const { unreadCount, hasUnreadCounsel, setHasUnreadCounsel } = useSyncStore();
-  const isAdmin = role === 'Admin';
 
-  const navItems = [
-    { path: '/profile/topup', icon: Gem, label: 'Treasury' },
-    { path: '/profile/history', icon: ScrollText, label: 'Ledger' },
-    { path: '/profile/missives', icon: Mail, label: 'Missives' },
-    { path: '/profile/support', icon: MessageSquare, label: 'Counsel' },
-  ];
-
-  if (isAdmin) {
-    navItems[0] = { path: '/profile/admin-dashboard', icon: ScrollText, label: 'Archives' };
+  if (isStaffRole(role)) {
+    return null;
   }
 
   return (
-    <div className={styles.navContainer}>
-      {navItems.map((item) => (
-        <NavLink
-          key={item.path}
-          to={item.path}
-          onClick={() => {
-            if (item.path === '/profile/support') {
-              setHasUnreadCounsel(false);
-            }
-          }}
-          className={({ isActive }) => 
-            `${styles.navItem} ${isActive ? styles.active : ''}`
-          }
-        >
-          <div className={styles.iconWrapper}>
-            <item.icon size={22} className={styles.icon} />
-            {item.path === '/profile/missives' && unreadCount > 0 && (
-              <span className={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
-            )}
-            {item.path === '/profile/support' && hasUnreadCounsel && (
-              <span className={styles.dot} />
-            )}
-          </div>
-          <span className={styles.label}>{item.label}</span>
-        </NavLink>
-      ))}
-    </div>
+    <nav className={styles.navContainer} aria-label="Quick navigation">
+      {PLAYER_NAV_ITEMS.map((item) => {
+        const IconComp = item.icon;
+        if (item.requiresAuth && !isLoggedIn) {
+          return (
+            <button
+              key={item.path}
+              type="button"
+              className={`${styles.navItem} ${styles.navLocked}`}
+              onClick={() =>
+                openAuthPrompt({
+                  title: item.authPromptTitle,
+                  message: item.authPromptMessage || 'Please sign in to access this feature.',
+                  redirectTo: { path: item.path },
+                })
+              }
+              aria-label={`${item.label} (Sign in required)`}
+            >
+              <span className={styles.iconWrapper}>
+                <IconComp size={20} />
+                <Lock size={11} className={styles.lockBadge} aria-hidden="true" />
+              </span>
+              <Text type="supporting" size="xsm" color="secondary">
+                {item.label}
+              </Text>
+            </button>
+          );
+        }
+
+        return (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            onClick={() => {
+              if (item.path === '/profile/support') {
+                setHasUnreadCounsel(false);
+              }
+            }}
+            className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+          >
+            <span className={styles.iconWrapper}>
+              <IconComp size={20} />
+              {item.path === '/profile/missives' && unreadCount > 0 && (
+                <span className={styles.floatingBadge}>
+                  <Badge variant="error" label={unreadCount > 99 ? '99+' : unreadCount} />
+                </span>
+              )}
+              {item.path === '/profile/support' && hasUnreadCounsel && (
+                <span className={styles.floatingDot}>
+                  <StatusDot variant="warning" label="New reply in Counsel" isPulsing />
+                </span>
+              )}
+            </span>
+            <Text type="supporting" size="xsm" weight="medium">
+              {item.label}
+            </Text>
+          </NavLink>
+        );
+      })}
+    </nav>
   );
 };

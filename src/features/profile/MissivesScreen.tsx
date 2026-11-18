@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BellOff, CheckCircle, XCircle, Gift, Info } from 'lucide-react';
-import { ParchmentBackground } from '../../components/ParchmentBackground/ParchmentBackground';
+import { BellOff, CheckCircle, XCircle, Gift, Info, CheckCheck } from 'lucide-react';
+import { Button } from '@astryxdesign/core/Button';
+import { Card } from '@astryxdesign/core/Card';
+import { EmptyState } from '@astryxdesign/core/EmptyState';
+import { Heading } from '@astryxdesign/core/Heading';
+import { HStack, VStack } from '@astryxdesign/core/Layout';
+import { List, ListItem } from '@astryxdesign/core/List';
+import { Skeleton } from '@astryxdesign/core/Skeleton';
+import { StatusDot } from '@astryxdesign/core/StatusDot';
+import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { apiClient } from '../../core/network/apiClient';
 import { supportHubService } from '../support/services/SupportHubService';
 import { useSyncStore } from '../../store/syncStore';
@@ -15,37 +23,49 @@ interface NotificationModel {
   read: boolean;
 }
 
+const getNotificationIcon = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'success':
+      return { Icon: CheckCircle, className: styles.iconSuccess };
+    case 'error':
+      return { Icon: XCircle, className: styles.iconError };
+    case 'promo':
+      return { Icon: Gift, className: styles.iconPromo };
+    default:
+      return { Icon: Info, className: styles.iconInfo };
+  }
+};
+
 export const MissivesScreen: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationModel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { setUnreadCount } = useSyncStore();
 
-  const fetchNotifications = useCallback(async (isInitial = false) => {
-    if (isInitial) setIsLoading(true);
-    try {
-      const response = await apiClient.get<NotificationModel[]>('/api/notification');
-      if (response.data && Array.isArray(response.data)) {
-        setNotifications(response.data);
-        const unread = response.data.filter((n) => !n.read).length;
-        setUnreadCount(unread);
+  const fetchNotifications = useCallback(
+    async (isInitial = false) => {
+      if (isInitial) setIsLoading(true);
+      try {
+        const response = await apiClient.get<NotificationModel[]>('/api/notification');
+        if (response.data && Array.isArray(response.data)) {
+          setNotifications(response.data);
+          const unread = response.data.filter((n) => !n.read).length;
+          setUnreadCount(unread);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch notifications:', error);
+      } finally {
+        if (isInitial) setIsLoading(false);
       }
-    } catch (error) {
-      console.warn('Failed to fetch notifications:', error);
-    } finally {
-      if (isInitial) setIsLoading(false);
-    }
-  }, [setUnreadCount]);
+    },
+    [setUnreadCount]
+  );
 
   useEffect(() => {
     let isMounted = true;
 
-    // 1. Initial fetch
     fetchNotifications(true);
-
-    // 2. Connect hub
     supportHubService.connect();
 
-    // 3. Real-time events
     const unsubNotif = supportHubService.onEvent('ReceiveNotification', () => {
       if (isMounted) fetchNotifications(false);
     });
@@ -62,12 +82,10 @@ export const MissivesScreen: React.FC = () => {
       if (isMounted) fetchNotifications(false);
     });
 
-    // 4. Smart background sync (every 6s) while active on Missives
     const interval = setInterval(() => {
       if (isMounted) fetchNotifications(false);
     }, 6000);
 
-    // 5. Window focus sync
     const handleFocus = () => {
       if (isMounted) fetchNotifications(false);
     };
@@ -108,101 +126,78 @@ export const MissivesScreen: React.FC = () => {
     try {
       const response = await apiClient.post('/api/notification/read-all');
       if (response.status === 200) {
-        setNotifications((prev) => {
-          const next = prev.map((n) => ({ ...n, read: true }));
-          setUnreadCount(0);
-          return next;
-        });
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('Failed to mark all as read', error);
     }
   };
 
-  const formatTime = (isoString: string) => {
-    const dt = new Date(isoString);
-    const now = new Date();
-    const diffMs = now.getTime() - dt.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 60) {
-      return diffMins <= 0 ? 'Just now' : `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return `${dt.getDate()} ${months[dt.getMonth()]}`;
-    }
-  };
-
-  const getIconData = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'success':
-        return { Icon: CheckCircle, className: styles.colorSuccess };
-      case 'error':
-        return { Icon: XCircle, className: styles.colorError };
-      case 'promo':
-        return { Icon: Gift, className: styles.colorPromo };
-      default:
-        return { Icon: Info, className: styles.colorInfo };
-    }
-  };
+  const unreadTotal = notifications.filter((n) => !n.read).length;
 
   return (
-    <ParchmentBackground padding="1rem">
-      <div className={styles.container}>
-        <div className={styles.headerRow}>
-          <h2 className={styles.title}>Recent Missives</h2>
-          <button className={styles.markAllBtn} onClick={markAllAsRead}>
-            Mark all as read
-          </button>
-        </div>
+    <VStack gap={4} width="100%">
+      <HStack hAlign="between" vAlign="center" gap={3} wrap="wrap" width="100%">
+        <Heading level={2}>Recent Missives</Heading>
+        <Button
+          label={unreadTotal > 0 ? `Mark all as read (${unreadTotal})` : 'All Caught Up'}
+          variant="secondary"
+          size="sm"
+          icon={<CheckCheck size={15} />}
+          isDisabled={unreadTotal === 0}
+          onClick={markAllAsRead}
+        />
+      </HStack>
 
-        <div className={styles.listContainer}>
-          {isLoading ? (
-            <div className={styles.emptyState}>
-              <p>Reading the scrolls...</p>
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className={styles.emptyState}>
-              <BellOff size={48} color="rgba(140, 123, 106, 0.5)" />
-              <p>The raven brought no messages today.</p>
-            </div>
-          ) : (
-            notifications.map((note) => {
-              const { Icon, className } = getIconData(note.type);
-              
+      {isLoading ? (
+        <VStack gap={2} width="100%">
+          {[0, 1, 2, 3].map((idx) => (
+            <Skeleton key={idx} width="100%" height={76} radius={3} index={idx} />
+          ))}
+        </VStack>
+      ) : notifications.length === 0 ? (
+        <Card variant="default" padding={6} width="100%">
+          <EmptyState
+            icon={<BellOff size={38} />}
+            title="No Missives Today"
+            description="The raven brought no messages today. Order confirmations and announcements appear here automatically."
+          />
+        </Card>
+      ) : (
+        <Card variant="default" padding={4} width="100%">
+          <List edge="bleed" hasDividers density="spacious">
+            {notifications.map((note) => {
+              const { Icon, className } = getNotificationIcon(note.type);
               return (
-                <div
+                <ListItem
                   key={note.id}
-                  className={`${styles.card} ${note.read ? styles.cardRead : ''}`}
+                  align="first-line"
+                  className={note.read ? styles.itemRead : styles.itemUnread}
                   onClick={() => markAsRead(note)}
-                >
-                  <div className={styles.iconWrapper}>
-                    <Icon size={20} className={className} />
-                  </div>
-                  <div className={styles.contentWrapper}>
-                    <div className={styles.topRow}>
-                      <p className={`${styles.notificationTitle} ${note.read ? styles.notificationTitleRead : ''}`}>
-                        {note.title}
-                      </p>
-                      <span className={styles.timeText}>{formatTime(note.createdAt)}</span>
-                    </div>
-                    <p className={`${styles.notificationMessage} ${note.read ? styles.notificationMessageRead : ''}`}>
-                      {note.message}
-                    </p>
-                  </div>
-                  {!note.read && <div className={styles.unreadDot} />}
-                </div>
+                  startContent={
+                    <span className={`${styles.iconRing} ${className}`} aria-hidden="true">
+                      <Icon size={18} />
+                    </span>
+                  }
+                  label={
+                    <HStack hAlign="between" vAlign="center" gap={2} wrap="wrap">
+                      <span>{note.title}</span>
+                      <HStack gap={2} vAlign="center">
+                        <Timestamp value={note.createdAt} format="auto" isLive />
+                        {!note.read && (
+                          <StatusDot variant="warning" label="Unread missive" isPulsing />
+                        )}
+                      </HStack>
+                    </HStack>
+                  }
+                  description={note.message}
+                />
               );
-            })
-          )}
-        </div>
-      </div>
-    </ParchmentBackground>
+            })}
+          </List>
+        </Card>
+      )}
+    </VStack>
   );
 };

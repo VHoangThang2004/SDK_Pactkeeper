@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@astryxdesign/core": "^0.7.16",
+    "@astryxdesign/theme-gothic": "^0.7.16",
     "@microsoft/signalr": "^10.0.0",
     "@react-oauth/google": "^0.13.5",
+    "@stylexjs/stylex": "^0.19.2",
     "axios": "^1.18.1",
     "lucide-react": "^1.25.0",
     "react": "^19.2.7",
@@ -20,6 +23,8 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@astryxdesign/build": "^0.7.16",
+    "@astryxdesign/cli": "^0.7.16",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

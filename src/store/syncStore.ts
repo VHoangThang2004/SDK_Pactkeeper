@@ -116,6 +116,10 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (!StorageService.isLoggedIn()) {
+        supportHubService.disconnect();
+        set({ unreadCount: 0, hasUnreadCounsel: false, isRealTimeOnline: false });
+      }
     };
   },
 }));

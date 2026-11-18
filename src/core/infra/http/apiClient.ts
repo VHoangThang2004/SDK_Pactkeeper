@@ -28,7 +28,13 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error(`API Error: ${error.response?.status} - ${error.message}`);
-    if (error.response?.status === 401 && !error.config?.url?.includes('/api/auth/')) {
+    // Only invalidate session and redirect when an authenticated user's token fails;
+    // Guests browsing public pages must not be kicked out on 401.
+    if (
+      error.response?.status === 401 &&
+      !error.config?.url?.includes('/api/auth/') &&
+      StorageService.isLoggedIn()
+    ) {
       StorageService.clearAuthData();
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
