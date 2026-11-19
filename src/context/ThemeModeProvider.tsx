@@ -1,16 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  defaultThemeSlug,
-  isValidThemeSlug,
   THEME_MODE_STORAGE_KEY,
-  THEME_SLUG_STORAGE_KEY,
   ThemeModeContext,
   type ThemeMode,
-  type ThemeSlug,
 } from './themeModeContext';
 
 function readInitialMode(): ThemeMode {
-  if (typeof window === 'undefined') return 'light';
+  if (typeof window === 'undefined') return 'dark';
   try {
     const stored = window.localStorage.getItem(THEME_MODE_STORAGE_KEY);
     if (stored === 'dark' || stored === 'light') {
@@ -19,25 +15,11 @@ function readInitialMode(): ThemeMode {
   } catch {
     // Ignore storage access restrictions
   }
-  return 'light';
-}
-
-function readInitialThemeSlug(): ThemeSlug {
-  if (typeof window === 'undefined') return defaultThemeSlug;
-  try {
-    const stored = window.localStorage.getItem(THEME_SLUG_STORAGE_KEY);
-    if (isValidThemeSlug(stored)) {
-      return stored;
-    }
-  } catch {
-    // Ignore storage access restrictions
-  }
-  return defaultThemeSlug;
+  return 'dark';
 }
 
 export const ThemeModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mode, setModeState] = useState<ThemeMode>(readInitialMode);
-  const [themeSlug, setThemeSlugState] = useState<ThemeSlug>(readInitialThemeSlug);
 
   useEffect(() => {
     try {
@@ -48,14 +30,6 @@ export const ThemeModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     document.documentElement.setAttribute('data-theme', mode);
   }, [mode]);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(THEME_SLUG_STORAGE_KEY, themeSlug);
-    } catch {
-      // Ignore storage access restrictions
-    }
-  }, [themeSlug]);
-
   const setMode = useCallback((nextMode: ThemeMode) => {
     setModeState(nextMode);
   }, []);
@@ -64,13 +38,9 @@ export const ThemeModeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setModeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
 
-  const setThemeSlug = useCallback((nextSlug: ThemeSlug) => {
-    setThemeSlugState(nextSlug);
-  }, []);
-
   const value = useMemo(
-    () => ({ mode, setMode, toggleMode, themeSlug, setThemeSlug }),
-    [mode, setMode, toggleMode, themeSlug, setThemeSlug]
+    () => ({ mode, setMode, toggleMode }),
+    [mode, setMode, toggleMode]
   );
 
   return <ThemeModeContext.Provider value={value}>{children}</ThemeModeContext.Provider>;

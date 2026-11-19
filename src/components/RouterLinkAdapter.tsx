@@ -7,16 +7,31 @@ export interface RouterLinkAdapterProps
   to?: To;
 }
 
+const EXTERNAL_SCHEME_REGEX = /^(https?:|mailto:|tel:)/i;
+
 export const RouterLinkAdapter = forwardRef<HTMLAnchorElement, RouterLinkAdapterProps>(
   ({ href, to, target, rel, children, ...rest }, ref) => {
-    const safeRel =
-      target === '_blank'
-        ? [rel, 'noopener', 'noreferrer'].filter(Boolean).join(' ')
-        : rel;
-    const routerTarget: To = to ?? href ?? '/';
+    const destination =
+      typeof href === 'string' ? href : typeof to === 'string' ? to : undefined;
+    const isExternal =
+      target === '_blank' ||
+      (destination !== undefined && EXTERNAL_SCHEME_REGEX.test(destination));
 
+    if (isExternal && destination) {
+      const safeRel =
+        target === '_blank'
+          ? [rel, 'noopener', 'noreferrer'].filter(Boolean).join(' ')
+          : rel;
+      return (
+        <a ref={ref} href={destination} target={target} rel={safeRel} {...rest}>
+          {children}
+        </a>
+      );
+    }
+
+    const routerTarget: To = to ?? href ?? '/';
     return (
-      <RouterLink ref={ref} to={routerTarget} target={target} rel={safeRel} {...rest}>
+      <RouterLink ref={ref} to={routerTarget} {...rest}>
         {children}
       </RouterLink>
     );

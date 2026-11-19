@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
-  Check,
-  CheckCircle2,
   Gem,
-  KeyRound,
-  LogIn,
-  Moon,
-  Palette,
-  Sun,
   User,
+  KeyRound,
+  CheckCircle2,
+  LogIn,
+  ArrowLeft,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Banner } from '@astryxdesign/core/Banner';
@@ -18,14 +16,12 @@ import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
 import { Center } from '@astryxdesign/core/Center';
 import { Divider } from '@astryxdesign/core/Divider';
-import { DropdownMenu, DropdownMenuItem } from '@astryxdesign/core/DropdownMenu';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Icon } from '@astryxdesign/core/Icon';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { HStack, VStack } from '@astryxdesign/core/Layout';
 import { Text } from '@astryxdesign/core/Text';
 import { TextInput } from '@astryxdesign/core/TextInput';
-import { ASTRYX_THEME_OPTIONS } from '../../context/themeModeContext';
 import { useThemeMode } from '../../hooks/useThemeMode';
 import { useAuthStore } from '../../store/authStore';
 import { loginUseCase, loginWithGoogleUseCase } from './di';
@@ -38,11 +34,8 @@ export const LoginScreen: React.FC = () => {
   const [usePasswordLogin, setUsePasswordLogin] = useState(false);
 
   const { login, setPendingRedirect } = useAuthStore();
-  const { mode, toggleMode, themeSlug, setThemeSlug } = useThemeMode();
+  const { mode, toggleMode } = useThemeMode();
   const navigate = useNavigate();
-
-  const currentThemeOption =
-    ASTRYX_THEME_OPTIONS.find((opt) => opt.slug === themeSlug) ?? ASTRYX_THEME_OPTIONS[0];
 
   const handleBrowseAsGuest = () => {
     setPendingRedirect(null);
@@ -84,34 +77,12 @@ export const LoginScreen: React.FC = () => {
   return (
     <Center padding={6} minHeight="100dvh" width="100%">
       <VStack gap={5} width="100%" maxWidth={460} hAlign="center">
-        <HStack hAlign="end" gap={2} width="100%">
-          <DropdownMenu
-            alignment="end"
-            button={{
-              label: currentThemeOption.label,
-              variant: 'secondary',
-              size: 'sm',
-              icon: <Icon icon={Palette} size="sm" />,
-            }}
-          >
-            {ASTRYX_THEME_OPTIONS.map((opt) => (
-              <DropdownMenuItem
-                key={opt.slug}
-                label={opt.label}
-                description={opt.subtitle}
-                endContent={
-                  themeSlug === opt.slug ? <Icon icon={Check} size="sm" color="accent" /> : undefined
-                }
-                onClick={() => setThemeSlug(opt.slug)}
-              />
-            ))}
-          </DropdownMenu>
-
+        <HStack hAlign="end" width="100%">
           <IconButton
             variant="ghost"
             size="sm"
             label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            tooltip={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            tooltip={mode === 'dark' ? 'Light Mode (Parchment)' : 'Dark Mode (Obsidian Gold)'}
             icon={<Icon icon={mode === 'dark' ? Sun : Moon} size="sm" />}
             onClick={toggleMode}
           />

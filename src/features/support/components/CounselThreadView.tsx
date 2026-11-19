@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Bot, Paperclip, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { Bot, Paperclip, ShieldCheck, HelpCircle } from 'lucide-react';
 import { Avatar } from '@astryxdesign/core/Avatar';
 import { Card } from '@astryxdesign/core/Card';
 import {
@@ -9,15 +9,14 @@ import {
   ChatMessageBubble,
   ChatMessageList,
 } from '@astryxdesign/core/Chat';
+import { Collapsible, CollapsibleGroup } from '@astryxdesign/core/Collapsible';
 import { Divider } from '@astryxdesign/core/Divider';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
-import { Icon } from '@astryxdesign/core/Icon';
 import { IconButton } from '@astryxdesign/core/IconButton';
-import { HStack, VStack } from '@astryxdesign/core/Layout';
 import { Lightbox } from '@astryxdesign/core/Lightbox';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Text } from '@astryxdesign/core/Text';
-import { Thumbnail } from '@astryxdesign/core/Thumbnail';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Token } from '@astryxdesign/core/Token';
 import { useToast } from '@astryxdesign/core/Toast';
@@ -36,6 +35,8 @@ export const CounselThreadView: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [isConnected, setIsConnected] = useState(supportHubService.isConnected());
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setHasUnreadCounsel(false);
@@ -134,7 +135,10 @@ export const CounselThreadView: React.FC = () => {
     }
   };
 
-  const uploadImageFile = async (file: File) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
@@ -166,32 +170,20 @@ export const CounselThreadView: React.FC = () => {
       });
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleTriggerFilePicker = () => {
-    const picker = document.createElement('input');
-    picker.type = 'file';
-    picker.accept = 'image/*';
-    picker.onchange = () => {
-      const file = picker.files?.[0];
-      if (file) {
-        void uploadImageFile(file);
-      }
-    };
-    picker.click();
-  };
-
   return (
-    <Card padding={0} elevation="low">
-      <HStack hAlign="between" vAlign="center" gap={3} padding={4} width="100%">
+    <Card padding={0} elevation="low" className="chatShell">
+      <HStack hAlign="between" vAlign="center" gap={3} padding={4}>
         <HStack gap={3} vAlign="center">
           <Avatar name="Keeper of Records" size="sm" />
           <VStack gap={0.5}>
             <HStack gap={2} vAlign="center" wrap="wrap">
               <Text weight="semibold">Keeper of Records</Text>
               <Token
-                icon={<Icon icon={ShieldCheck} size="xsm" />}
+                icon={<ShieldCheck size={12} aria-hidden="true" />}
                 label="Official GM"
                 size="sm"
               />
@@ -216,12 +208,63 @@ export const CounselThreadView: React.FC = () => {
 
       <Divider />
 
-      <VStack height="65dvh" minHeight={480} isScrollable width="100%">
+      <Collapsible
+        trigger={
+          <HStack gap={2} vAlign="center" padding={3}>
+            <HelpCircle size={15} aria-hidden="true" />
+            <Text weight="medium" size="sm">
+              Quick Inquiries &amp; Payment FAQ
+            </Text>
+          </HStack>
+        }
+        defaultIsOpen={false}
+      >
+        <Card padding={3} variant="muted">
+          <CollapsibleGroup type="single" hasDividers>
+            <Collapsible
+              value="faq-delivery"
+              trigger={<Text size="sm" weight="medium">How are Gems and Bundles credited to my account?</Text>}
+            >
+              <Text type="supporting" size="sm" color="secondary">
+                Upon PayOS payment confirmation, your gems, equipment, and items are instantly synchronized with the game server and credited to your Player ID.
+              </Text>
+            </Collapsible>
+            <Collapsible
+              value="faq-vietqr"
+              trigger={<Text size="sm" weight="medium">How long is the PayOS VietQR code valid?</Text>}
+            >
+              <Text type="supporting" size="sm" color="secondary">
+                Each VietQR code remains active for 15 minutes. Once scanned and transferred with your banking app, the transaction completes within 3 to 15 seconds.
+              </Text>
+            </Collapsible>
+            <Collapsible
+              value="faq-support"
+              trigger={<Text size="sm" weight="medium">What if my balance has not updated?</Text>}
+            >
+              <Text type="supporting" size="sm" color="secondary">
+                Check your Transaction Ledger in the top navigation. If still pending, attach your bank transfer receipt right here in this Counsel chat to notify the support team.
+              </Text>
+            </Collapsible>
+          </CollapsibleGroup>
+        </Card>
+      </Collapsible>
+
+      <Divider />
+
+      <input
+        type="file"
+        accept="image/*"
+        className="hiddenInput"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+      />
+
+      <VStack className="chatBody">
         <ChatLayout
           density="balanced"
           emptyState={
             <EmptyState
-              icon={<Icon icon={Bot} size="lg" color="accent" />}
+              icon={<Bot size={32} aria-hidden="true" />}
               title="Counsel Live Support"
               description="Have an inquiry about your top-up, in-game deliveries, or account? Send a message below to summon the Keeper of Records."
             />
@@ -239,12 +282,12 @@ export const CounselThreadView: React.FC = () => {
               }
               footerActions={
                 <IconButton
-                  icon={<Icon icon={Paperclip} size="sm" />}
+                  icon={<Paperclip size={16} aria-hidden="true" />}
                   variant="ghost"
                   size="sm"
                   label="Attach screenshot or receipt image"
                   isDisabled={isUploading}
-                  onClick={handleTriggerFilePicker}
+                  onClick={() => fileInputRef.current?.click()}
                 />
               }
             />
@@ -274,12 +317,18 @@ export const CounselThreadView: React.FC = () => {
                       <VStack gap={2}>
                         {msg.text && <Text color="inherit">{msg.text}</Text>}
                         {resolvedImg && (
-                          <Thumbnail
-                            src={resolvedImg}
-                            alt="Support attachment"
-                            label="Inspect image attachment"
+                          <button
+                            type="button"
+                            className="attachmentBtn"
                             onClick={() => setLightboxSrc(resolvedImg)}
-                          />
+                            aria-label="Inspect image attachment"
+                          >
+                            <img
+                              src={resolvedImg}
+                              alt="Support attachment"
+                              className="attachmentImg"
+                            />
+                          </button>
                         )}
                       </VStack>
                     </ChatMessageBubble>

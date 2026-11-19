@@ -20,8 +20,7 @@ import { Divider } from '@astryxdesign/core/Divider';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Heading } from '@astryxdesign/core/Heading';
-import { Icon } from '@astryxdesign/core/Icon';
-import { HStack, VStack } from '@astryxdesign/core/Layout';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Text } from '@astryxdesign/core/Text';
@@ -61,7 +60,7 @@ export const CheckoutScreen: React.FC = () => {
       <LayoutWrapper>
         <Center minHeight="60vh">
           <EmptyState
-            icon={<Icon icon={AlertCircle} size="lg" color="warning" />}
+            icon={<AlertCircle size={32} aria-hidden="true" />}
             title="No Package Selected"
             description="Please select a Gem tier or Bundle from the Treasury catalog before proceeding to checkout."
             actions={
@@ -116,25 +115,27 @@ export const CheckoutScreen: React.FC = () => {
 
   return (
     <LayoutWrapper>
-      <VStack gap={5} width="100%">
-        <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3} width="100%">
+      <VStack gap={5}>
+        {/* Top bar */}
+        <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
           <Button
             variant="ghost"
             size="sm"
-            icon={<Icon icon={ArrowLeft} size="sm" />}
+            icon={<ArrowLeft size={16} aria-hidden="true" />}
             label="Return to Treasury"
             onClick={() => navigate(-1)}
           />
           <HStack gap={2} vAlign="center">
-            <Icon icon={Lock} size="xsm" color="secondary" />
+            <Lock size={14} aria-hidden="true" />
             <Text type="supporting" size="sm" color="secondary">
               Secure 256-Bit SSL Checkout
             </Text>
           </HStack>
         </HStack>
 
+        {/* Character Destination Card */}
         <Card padding={4} elevation="low">
-          <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3} width="100%">
+          <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
             <HStack gap={3} vAlign="center">
               <Avatar
                 src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${username || 'Player'}`}
@@ -161,10 +162,12 @@ export const CheckoutScreen: React.FC = () => {
           </HStack>
         </Card>
 
-        <Grid columns={{ minWidth: 320, max: 2, repeat: 'fit' }} gap={5} width="100%">
-          <VStack gap={5} width="100%">
+        {/* Responsive 2-column checkout layout */}
+        <Grid gap={5} className="checkoutGrid">
+          {/* Left column: Item details + PayOS gateway info */}
+          <VStack gap={5}>
             <Card padding={5} elevation="low">
-              <VStack gap={4} width="100%">
+              <VStack gap={4}>
                 <HStack gap={2} vAlign="center">
                   <Token label="Step 1" size="sm" />
                   <Heading level={3}>Order Item Details</Heading>
@@ -173,13 +176,15 @@ export const CheckoutScreen: React.FC = () => {
                 <Divider />
 
                 <HStack gap={5} vAlign="center" wrap="wrap">
-                  <GemArt gemsAmount={pack.gemsAmount} size={64} />
+                  <Center width={96} height={96}>
+                    <GemArt gemsAmount={pack.gemsAmount} size={80} />
+                  </Center>
 
                   <VStack gap={2}>
                     <Heading level={4}>{pack.name}</Heading>
 
                     <HStack gap={2} vAlign="center">
-                      <Icon icon={Gem} size="sm" color="cyan" />
+                      <Gem size={18} aria-hidden="true" />
                       <Text weight="semibold" size="lg" hasTabularNumbers>
                         {pack.gemsAmount.toLocaleString('en-US')} Gems
                       </Text>
@@ -194,7 +199,7 @@ export const CheckoutScreen: React.FC = () => {
                           {unitList.map((n, i) => (
                             <Token
                               key={`u-${i}`}
-                              icon={<Icon icon={Swords} size="xsm" />}
+                              icon={<Swords size={12} aria-hidden="true" />}
                               label={`Hero: ${n}`}
                               size="sm"
                             />
@@ -202,7 +207,7 @@ export const CheckoutScreen: React.FC = () => {
                           {weaponList.map((n, i) => (
                             <Token
                               key={`w-${i}`}
-                              icon={<Icon icon={Shield} size="xsm" />}
+                              icon={<Shield size={12} aria-hidden="true" />}
                               label={`Weapon: ${n}`}
                               size="sm"
                             />
@@ -210,7 +215,7 @@ export const CheckoutScreen: React.FC = () => {
                           {trinketList.map((n, i) => (
                             <Token
                               key={`t-${i}`}
-                              icon={<Icon icon={Sparkles} size="xsm" />}
+                              icon={<Sparkles size={12} aria-hidden="true" />}
                               label={`Trinket: ${n}`}
                               size="sm"
                             />
@@ -224,7 +229,7 @@ export const CheckoutScreen: React.FC = () => {
             </Card>
 
             <Card padding={5} elevation="low">
-              <VStack gap={4} width="100%">
+              <VStack gap={4}>
                 <HStack gap={2} vAlign="center">
                   <Token label="Step 2" size="sm" />
                   <Heading level={3}>Payment Gateway</Heading>
@@ -239,7 +244,7 @@ export const CheckoutScreen: React.FC = () => {
                 />
 
                 <MetadataList>
-                  <MetadataListItem label="Provider" icon={<Icon icon={QrCode} size="xsm" />}>
+                  <MetadataListItem label="Provider" icon={<QrCode size={14} aria-hidden="true" />}>
                     PayOS Official Gateway
                   </MetadataListItem>
                   <MetadataListItem label="Supported Channels">
@@ -255,8 +260,9 @@ export const CheckoutScreen: React.FC = () => {
             </Card>
           </VStack>
 
-          <Card padding={5} elevation="med">
-            <VStack gap={4} width="100%">
+          {/* Right column: Summary & Pay CTA */}
+          <Card padding={5} elevation="med" className="summaryCard">
+            <VStack gap={4}>
               <Heading level={3}>Payment Summary</Heading>
 
               <Divider />
@@ -278,7 +284,7 @@ export const CheckoutScreen: React.FC = () => {
 
               <Divider />
 
-              <HStack hAlign="between" vAlign="center" width="100%">
+              <HStack hAlign="between" vAlign="center">
                 <Text weight="medium" color="secondary">
                   Total Price
                 </Text>
@@ -292,7 +298,7 @@ export const CheckoutScreen: React.FC = () => {
               <Button
                 variant="primary"
                 size="lg"
-                width="100%"
+                width="fill"
                 label={`Proceed to Pay (${formatPrice(pack.priceVnd)})`}
                 onClick={handlePay}
                 isLoading={isLoading}
@@ -300,7 +306,7 @@ export const CheckoutScreen: React.FC = () => {
               />
 
               <HStack gap={2} vAlign="start">
-                <Icon icon={ShieldCheck} size="sm" color="success" />
+                <ShieldCheck size={16} aria-hidden="true" className="guaranteeIcon" />
                 <Text type="supporting" size="sm" color="secondary">
                   100% Instant Delivery via PayOS. In-game currency and items are automatically
                   credited to your player account upon transaction confirmation.

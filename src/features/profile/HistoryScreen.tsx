@@ -13,18 +13,15 @@ import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Heading } from '@astryxdesign/core/Heading';
-import { Icon } from '@astryxdesign/core/Icon';
-import { HStack, VStack } from '@astryxdesign/core/Layout';
 import { List, ListItem } from '@astryxdesign/core/List';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
 import { Table, proportional, type TableColumn } from '@astryxdesign/core/Table';
 import { Text } from '@astryxdesign/core/Text';
-import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { useToast } from '@astryxdesign/core/Toast';
 import { apiClient } from '../../core/network/apiClient';
-import { useIsMobile } from '../../hooks/useIsMobile';
 import { useSyncStore } from '../../store/syncStore';
 
 interface PaymentHistory extends Record<string, unknown> {
@@ -38,12 +35,27 @@ interface PaymentHistory extends Record<string, unknown> {
 
 type StatusFilter = 'all' | 'completed' | 'pending' | 'cancelled';
 
-const PAYOS_EXPIRY_MS = 15 * 60 * 1000;
+const PAYOS_EXPIRY_MS = 15 * 60 * 1000; // Standard PayOS payment window: 15 minutes
+
+const formatTxnTime = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('vi-VN', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return '';
+  }
+};
 
 export const HistoryScreen: React.FC = () => {
   const navigate = useNavigate();
   const showToast = useToast();
-  const isMobile = useIsMobile();
 
   const [history, setHistory] = useState<PaymentHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -258,10 +270,12 @@ export const HistoryScreen: React.FC = () => {
         width: proportional(1.4, { minWidth: 160 }),
         renderCell: (txn) => (
           <VStack gap={0.5}>
-            <Text type="code" weight="semibold" hasTabularNumbers>
+            <Text type="code" size="base" weight="semibold" hasTabularNumbers>
               TXN-{txn.orderCode}
             </Text>
-            <Timestamp value={txn.createdAt} format="date_time" size="2xs" color="secondary" />
+            <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
+              {formatTxnTime(txn.createdAt)}
+            </Text>
           </VStack>
         ),
       },
@@ -274,7 +288,7 @@ export const HistoryScreen: React.FC = () => {
           return (
             <VStack gap={0.5}>
               <HStack gap={1.5} vAlign="center">
-                <Icon icon={Gem} size="xsm" color="cyan" />
+                <Gem size={14} aria-hidden="true" />
                 <Text weight="semibold" hasTabularNumbers>
                   {txn.gemsAmount > 0
                     ? `+${txn.gemsAmount.toLocaleString('en-US')} Gems`
@@ -325,7 +339,7 @@ export const HistoryScreen: React.FC = () => {
                 <Button
                   variant="primary"
                   size="sm"
-                  icon={<Icon icon={ExternalLink} size="xsm" />}
+                  icon={<ExternalLink size={14} aria-hidden="true" />}
                   label="VietQR"
                   onClick={() => handlePayNow(txn.checkoutUrl)}
                 />
@@ -333,7 +347,7 @@ export const HistoryScreen: React.FC = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                icon={<Icon icon={XCircle} size="xsm" />}
+                icon={<XCircle size={14} aria-hidden="true" />}
                 label="Cancel"
                 onClick={() => setCancelTargetOrder(txn.orderCode)}
               />
@@ -346,8 +360,8 @@ export const HistoryScreen: React.FC = () => {
   );
 
   return (
-    <VStack gap={5} width="100%">
-      <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3} width="100%">
+    <VStack gap={5}>
+      <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
         <VStack gap={1}>
           <Heading level={2}>Transaction Records</Heading>
           <Text type="supporting" color="secondary">
@@ -358,7 +372,7 @@ export const HistoryScreen: React.FC = () => {
         <Button
           variant="secondary"
           size="sm"
-          icon={<Icon icon={RefreshCw} size="xsm" />}
+          icon={<RefreshCw size={14} aria-hidden="true" />}
           label={isRefreshing ? 'Syncing...' : 'Sync Records'}
           isLoading={isRefreshing}
           isDisabled={isLoading || isRefreshing}
@@ -406,7 +420,7 @@ export const HistoryScreen: React.FC = () => {
       ) : filteredHistory.length === 0 ? (
         <Card padding={6}>
           <EmptyState
-            icon={<Icon icon={ScrollText} size="lg" color="secondary" />}
+            icon={<ScrollText size={32} aria-hidden="true" />}
             title="No Transactions Found"
             description="No orders match the selected filter. Visit the Treasury to acquire Gems."
             actions={
@@ -418,74 +432,78 @@ export const HistoryScreen: React.FC = () => {
             }
           />
         </Card>
-      ) : !isMobile ? (
-        <Card padding={0}>
-          <Table
-            data={filteredHistory}
-            columns={columns}
-            idKey="orderCode"
-            density="balanced"
-            dividers="rows"
-            hasHover
-          />
-        </Card>
       ) : (
-        <Card padding={0}>
-          <List hasDividers edge="bleed">
-            {filteredHistory.map((txn) => {
-              const { isActivePending } = classifyOrder(txn);
-              return (
-                <ListItem
-                  key={txn.orderCode}
-                  align="start"
-                  label={
-                    <HStack hAlign="between" vAlign="center" gap={2} width="100%">
-                      <Text weight="semibold" hasTabularNumbers>
-                        {txn.gemsAmount > 0
-                          ? `+${txn.gemsAmount.toLocaleString('en-US')} Gems`
-                          : 'Pact Package'}
-                      </Text>
-                      <Text weight="semibold" hasTabularNumbers>
-                        {txn.amount.toLocaleString('vi-VN')} VND
-                      </Text>
-                    </HStack>
-                  }
-                  description={
-                    <VStack gap={2} width="100%">
-                      <HStack hAlign="between" vAlign="center" wrap="wrap" gap={2} width="100%">
-                        <Text type="code" size="2xs" color="secondary" hasTabularNumbers>
-                          TXN-{txn.orderCode}
+        <>
+          <Card padding={0} className="desktopOnly">
+            <Table
+              data={filteredHistory}
+              columns={columns}
+              idKey="orderCode"
+              density="balanced"
+              dividers="rows"
+              hasHover
+            />
+          </Card>
+
+          <Card padding={0} className="mobileOnly">
+            <List hasDividers edge="bleed">
+              {filteredHistory.map((txn) => {
+                const { isActivePending } = classifyOrder(txn);
+                return (
+                  <ListItem
+                    key={txn.orderCode}
+                    align="start"
+                    label={
+                      <HStack hAlign="between" vAlign="center" gap={2}>
+                        <Text weight="semibold" hasTabularNumbers>
+                          {txn.gemsAmount > 0
+                            ? `+${txn.gemsAmount.toLocaleString('en-US')} Gems`
+                            : 'Pact Package'}
                         </Text>
-                        <Timestamp value={txn.createdAt} format="date_time" size="2xs" color="secondary" />
+                        <Text weight="semibold" hasTabularNumbers>
+                          {txn.amount.toLocaleString('vi-VN')} VND
+                        </Text>
                       </HStack>
-                      {renderStatus(txn)}
-                      {isActivePending && (
-                        <HStack gap={2} wrap="wrap">
-                          {txn.checkoutUrl && (
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              icon={<Icon icon={ExternalLink} size="xsm" />}
-                              label="Pay with VietQR"
-                              onClick={() => handlePayNow(txn.checkoutUrl)}
-                            />
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={<Icon icon={XCircle} size="xsm" />}
-                            label="Cancel Order"
-                            onClick={() => setCancelTargetOrder(txn.orderCode)}
-                          />
+                    }
+                    description={
+                      <VStack gap={2}>
+                        <HStack hAlign="between" vAlign="center" wrap="wrap" gap={2}>
+                          <Text type="code" size="sm" color="secondary" hasTabularNumbers>
+                            TXN-{txn.orderCode}
+                          </Text>
+                          <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
+                            {formatTxnTime(txn.createdAt)}
+                          </Text>
                         </HStack>
-                      )}
-                    </VStack>
-                  }
-                />
-              );
-            })}
-          </List>
-        </Card>
+                        {renderStatus(txn)}
+                        {isActivePending && (
+                          <HStack gap={2} wrap="wrap">
+                            {txn.checkoutUrl && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                icon={<ExternalLink size={14} aria-hidden="true" />}
+                                label="Pay with VietQR"
+                                onClick={() => handlePayNow(txn.checkoutUrl)}
+                              />
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              icon={<XCircle size={14} aria-hidden="true" />}
+                              label="Cancel Order"
+                              onClick={() => setCancelTargetOrder(txn.orderCode)}
+                            />
+                          </HStack>
+                        )}
+                      </VStack>
+                    }
+                  />
+                );
+              })}
+            </List>
+          </Card>
+        </>
       )}
 
       <AlertDialog
