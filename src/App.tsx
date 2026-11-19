@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom';
 import { LinkProvider } from '@astryxdesign/core/Link';
 import { RouterLinkAdapter } from './components/RouterLinkAdapter';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuthStore } from './store/authStore';
 import { LoginScreen } from './features/auth/LoginScreen';
 import { ProfileScreen } from './features/profile/ProfileScreen';
@@ -57,7 +58,8 @@ function App() {
   return (
     <Router>
       <LinkProvider component={RouterLinkAdapter}>
-        <Routes>
+        <ErrorBoundary>
+          <Routes>
           {/* Public payment callback routes (for mobile browser redirects) */}
           <Route path="/payment/success" element={<PaymentResultScreen isSuccess={true} />} />
           <Route path="/payment/cancel" element={<PaymentResultScreen isSuccess={false} />} />
@@ -93,8 +95,9 @@ function App() {
             </>
           )}
         </Routes>
-      </LinkProvider>
-    </Router>
+      </ErrorBoundary>
+    </LinkProvider>
+  </Router>
   );
 }
 

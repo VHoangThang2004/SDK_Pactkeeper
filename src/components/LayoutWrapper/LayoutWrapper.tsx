@@ -1,21 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Check,
   Gem,
-  Headphones,
-  Lock,
-  LogIn,
-  LogOut,
-  Mail,
-  Menu,
-  MessageSquare,
-  Moon,
-  Palette,
-  Receipt,
   ShieldCheck,
-  Sun,
   Zap,
+  Headphones,
+  LogOut,
+  LogIn,
+  Lock,
+  Menu,
+  Moon,
+  Sun,
+  Copy,
+  Receipt,
+  Mail,
+  MessageSquare,
 } from 'lucide-react';
 import { AppShell } from '@astryxdesign/core/AppShell';
 import { Avatar, AvatarStatusDot } from '@astryxdesign/core/Avatar';
@@ -23,12 +22,12 @@ import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
 import { Divider } from '@astryxdesign/core/Divider';
-import { DropdownMenu, DropdownMenuItem } from '@astryxdesign/core/DropdownMenu';
+import { DropdownMenu } from '@astryxdesign/core/DropdownMenu';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Icon } from '@astryxdesign/core/Icon';
 import { IconButton } from '@astryxdesign/core/IconButton';
-import { HStack, Layout, LayoutContent, VStack } from '@astryxdesign/core/Layout';
+import { HStack, VStack } from '@astryxdesign/core/Layout';
 import { MobileNav } from '@astryxdesign/core/MobileNav';
 import { NavIcon } from '@astryxdesign/core/NavIcon';
 import { Section } from '@astryxdesign/core/Section';
@@ -38,71 +37,25 @@ import { Text } from '@astryxdesign/core/Text';
 import { useToast } from '@astryxdesign/core/Toast';
 import { Token } from '@astryxdesign/core/Token';
 import { TopNav, TopNavHeading, TopNavItem } from '@astryxdesign/core/TopNav';
-import { ASTRYX_THEME_OPTIONS } from '../../context/themeModeContext';
-import { useIsMobile } from '../../hooks/useIsMobile';
 import { useThemeMode } from '../../hooks/useThemeMode';
 import { useAuthStore } from '../../store/authStore';
 import { useSyncStore } from '../../store/syncStore';
+import { PLAYER_NAV_ITEMS } from '../navigation/playerNavItems';
 import { AuthPromptModal } from '../AuthPromptModal/AuthPromptModal';
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
 }
 
-interface NavConfigItem {
-  label: string;
-  path: string;
-  icon: typeof Gem;
-  requiresAuth: boolean;
-  authPromptTitle?: string;
-  authPromptMessage?: string;
-}
-
-const PLAYER_NAV_ITEMS: readonly NavConfigItem[] = [
-  {
-    label: 'Treasury',
-    path: '/profile/topup',
-    icon: Gem,
-    requiresAuth: false,
-  },
-  {
-    label: 'Ledger',
-    path: '/profile/history',
-    icon: Receipt,
-    requiresAuth: true,
-    authPromptTitle: 'Sign In to View Treasury Ledger',
-    authPromptMessage:
-      'Your transaction history and PayOS payment records are protected. Please sign in to inspect your personal ledger.',
-  },
-  {
-    label: 'Missives',
-    path: '/profile/missives',
-    icon: Mail,
-    requiresAuth: true,
-    authPromptTitle: 'Sign In to Read Missives',
-    authPromptMessage:
-      'In-game delivery alerts and real-time account notifications are available after signing in.',
-  },
-  {
-    label: 'Counsel',
-    path: '/profile/support',
-    icon: MessageSquare,
-    requiresAuth: true,
-    authPromptTitle: 'Sign In for Live Counsel Support',
-    authPromptMessage:
-      'Connect with official Game Masters in real time by signing in to your Pactkeeper account.',
-  },
-] as const;
-
 const TRUST_PILLARS = [
   {
     title: 'Instant In-Game Delivery',
-    description: 'Gems & bundles are credited automatically to your account within seconds.',
+    description: 'Gems and bundles are credited automatically to your account within seconds.',
     icon: Zap,
   },
   {
     title: '100% Certified & Secure',
-    description: 'Encrypted payment channels powered by PayOS & national banking standards.',
+    description: 'Encrypted payment channels powered by PayOS and national banking standards.',
     icon: ShieldCheck,
   },
   {
@@ -125,8 +78,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
     startGlobalSync,
     setHasUnreadCounsel,
   } = useSyncStore();
-  const { mode, toggleMode, themeSlug, setThemeSlug } = useThemeMode();
-  const isMobile = useIsMobile();
+  const { mode, toggleMode } = useThemeMode();
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
@@ -210,8 +162,16 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
       : playerId
     : '';
 
-  const currentThemeOption =
-    ASTRYX_THEME_OPTIONS.find((opt) => opt.slug === themeSlug) ?? ASTRYX_THEME_OPTIONS[0];
+  const handleCopyUid = () => {
+    if (!playerId) return;
+    navigator.clipboard.writeText(playerId);
+    toast({
+      body: `Player ID (${playerId}) copied to clipboard.`,
+      type: 'info',
+      uniqueID: 'pactkeeper-copy-uid',
+      collisionBehavior: 'overwrite',
+    });
+  };
 
   const handleDirectSignIn = () => {
     setIsMobileNavOpen(false);
@@ -284,87 +244,79 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
 
   const endContent = (
     <HStack gap={2} vAlign="center">
-      <DropdownMenu
-        alignment="end"
-        button={{
-          label: currentThemeOption.label,
-          variant: 'secondary',
-          size: 'sm',
-          icon: <Icon icon={Palette} size="sm" />,
-        }}
-      >
-        {ASTRYX_THEME_OPTIONS.map((opt) => (
-          <DropdownMenuItem
-            key={opt.slug}
-            label={opt.label}
-            description={opt.subtitle}
-            endContent={
-              themeSlug === opt.slug ? <Icon icon={Check} size="sm" color="accent" /> : undefined
-            }
-            onClick={() => setThemeSlug(opt.slug)}
-          />
-        ))}
-      </DropdownMenu>
-
       <IconButton
         variant="ghost"
         size="sm"
         label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        tooltip={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        tooltip={mode === 'dark' ? 'Light Mode (Parchment)' : 'Dark Mode (Obsidian Gold)'}
         icon={<Icon icon={mode === 'dark' ? Sun : Moon} size="sm" />}
         onClick={toggleMode}
       />
 
       {isLoggedIn ? (
-        <>
-          <HStack gap={2} vAlign="center">
-            <Avatar
-              size={32}
-              name={username || 'Player'}
-              src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${username || 'Hero'}`}
-              status={
-                <AvatarStatusDot
-                  variant={isRealTimeOnline ? 'success' : 'neutral'}
-                  label={isRealTimeOnline ? 'Real-time SignalR active' : 'Polling sync active'}
-                />
-              }
-              tooltip={`${username || 'Player'} · ${
-                isRealTimeOnline ? 'SignalR live sync' : 'Polling sync active'
-              }`}
-            />
-            {!isMobile && (
-              <VStack gap={0}>
-                <Text type="label" size="sm" weight="semibold" maxLines={1}>
-                  {username || 'Player'}
-                </Text>
-                {displayUid && (
-                  <Text type="code" size="xsm" color="secondary">
-                    ID: {displayUid}
-                  </Text>
-                )}
-              </VStack>
-            )}
-          </HStack>
-
-          <IconButton
-            label="Sign Out"
-            tooltip="Sign Out"
-            variant="ghost"
-            size="sm"
-            icon={<Icon icon={LogOut} size="sm" />}
-            onClick={handleSignOut}
-          />
-        </>
+        <DropdownMenu
+          button={{
+            variant: 'ghost',
+            size: 'sm',
+            label: username || 'Player',
+            endContent: (
+              <Avatar
+                size="sm"
+                name={username || 'Player'}
+                src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${username || 'Hero'}`}
+                status={
+                  <AvatarStatusDot
+                    variant={isRealTimeOnline ? 'success' : 'neutral'}
+                    label={isRealTimeOnline ? 'Real-time SignalR active' : 'Polling sync active'}
+                  />
+                }
+              />
+            ),
+          }}
+          items={[
+            {
+              id: 'uid-copy',
+              label: `UID: ${displayUid || 'Current Account'}`,
+              description: 'Click to copy full player ID',
+              icon: <Icon icon={Copy} size="xsm" />,
+              onClick: handleCopyUid,
+            },
+            {
+              id: 'menu-ledger',
+              label: 'Treasury Ledger',
+              icon: <Icon icon={Receipt} size="xsm" />,
+              onClick: () => navigate('/profile/history'),
+            },
+            {
+              id: 'menu-missives',
+              label: 'Missives Inbox',
+              icon: <Icon icon={Mail} size="xsm" />,
+              endContent: unreadCount > 0 ? <Badge variant="error" label={unreadCount} /> : undefined,
+              onClick: () => navigate('/profile/missives'),
+            },
+            {
+              id: 'menu-counsel',
+              label: 'Counsel Support',
+              icon: <Icon icon={MessageSquare} size="xsm" />,
+              onClick: () => navigate('/profile/support'),
+            },
+            {
+              id: 'menu-signout',
+              label: 'Sign Out',
+              variant: 'destructive',
+              icon: <Icon icon={LogOut} size="xsm" />,
+              onClick: handleSignOut,
+            },
+          ]}
+        />
       ) : (
         <>
-          {!isMobile && (
-            <HStack gap={1.5} vAlign="center">
-              <StatusDot variant="neutral" label="Guest session" />
-              <Text type="supporting" size="sm" color="secondary">
-                Guest
-              </Text>
-            </HStack>
-          )}
+          <HStack gap={1.5} vAlign="center" className="desktopOnly">
+            <StatusDot variant="neutral" label="Guest session" />
+            <Text type="supporting" size="sm" color="secondary">
+              Guest
+            </Text>
+          </HStack>
           <Button
             label="Sign In"
             variant="primary"
@@ -382,15 +334,14 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
       label="Pactkeeper Top-Up Navigation"
       heading={
         <HStack gap={2} vAlign="center">
-          {isMobile && (
-            <IconButton
-              variant="ghost"
-              size="sm"
-              label="Open navigation menu"
-              icon={<Icon icon={Menu} size="md" />}
-              onClick={() => setIsMobileNavOpen(true)}
-            />
-          )}
+          <IconButton
+            className="mobileOnly"
+            variant="ghost"
+            size="sm"
+            label="Open navigation menu"
+            icon={<Icon icon={Menu} size="md" />}
+            onClick={() => setIsMobileNavOpen(true)}
+          />
           <TopNavHeading
             logo={<NavIcon icon={<Icon icon={Gem} size="sm" color="accent" />} />}
             heading="PACTKEEPER"
@@ -399,13 +350,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
           />
         </HStack>
       }
-      centerContent={
-        !isMobile ? (
-          <HStack gap={1} vAlign="center">
-            {desktopNavItems}
-          </HStack>
-        ) : undefined
-      }
+      centerContent={<HStack gap={1} vAlign="center" className="desktopOnly">{desktopNavItems}</HStack>}
       endContent={endContent}
     />
   );
@@ -413,70 +358,52 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   return (
     <>
       <AppShell variant="wash" height="auto" contentPadding={0} topNav={topNav}>
-        <VStack gap={0} width="100%" minHeight="calc(100dvh - 64px)" vAlign="between">
-          <Layout
-            contentWidth={1200}
-            height="auto"
-            padding={5}
-            content={
-              <LayoutContent isScrollable={false} padding={0}>
-                {children}
-              </LayoutContent>
-            }
-          />
+        <VStack gap={6} width="100%">
+          {children}
 
-          <Section variant="section" dividers={['top']} padding={0} width="100%">
-            <Layout
-              contentWidth={1200}
-              height="auto"
-              padding={6}
-              content={
-                <LayoutContent isScrollable={false} padding={0}>
-                  <VStack gap={5} width="100%">
-                    <Grid columns={{ minWidth: 240, max: 3, repeat: 'fit' }} gap={4} width="100%">
-                      {TRUST_PILLARS.map((pillar) => (
-                        <Card key={pillar.title} variant="default" padding={4}>
-                          <HStack gap={3} vAlign="start">
-                            <Icon icon={pillar.icon} size="lg" color="accent" />
-                            <VStack gap={1}>
-                              <Heading level={4}>{pillar.title}</Heading>
-                              <Text type="supporting" size="sm" color="secondary" display="block">
-                                {pillar.description}
-                              </Text>
-                            </VStack>
-                          </HStack>
-                        </Card>
-                      ))}
-                    </Grid>
-
-                    <Divider />
-
-                    <HStack hAlign="between" vAlign="center" gap={4} wrap="wrap" width="100%">
-                      <VStack gap={0.5}>
+          <Section variant="section" dividers={['top']} padding={6} width="100%">
+            <VStack gap={5} width="100%">
+              <Grid columns={{ minWidth: 240, max: 3, repeat: 'fit' }} gap={4} width="100%">
+                {TRUST_PILLARS.map((pillar) => (
+                  <Card key={pillar.title} variant="default" padding={4}>
+                    <HStack gap={3} vAlign="start">
+                      <Icon icon={pillar.icon} size="lg" color="accent" />
+                      <VStack gap={1}>
+                        <Heading level={4}>{pillar.title}</Heading>
                         <Text type="supporting" size="sm" color="secondary" display="block">
-                          © 2026 Pactkeeper Team — FPT University SEP490. All Rights Reserved.
-                        </Text>
-                        <Text type="supporting" size="xsm" color="disabled" display="block">
-                          Pactkeeper Web SDK is the official game top-up platform. Please confirm
-                          your UID and Server before purchase.
+                          {pillar.description}
                         </Text>
                       </VStack>
-
-                      <HStack gap={1.5} wrap="wrap">
-                        {PAYMENT_CHANNELS.map((channel) => (
-                          <Token
-                            key={channel}
-                            label={channel}
-                            size="sm"
-                            color={channel === 'PayOS' ? 'cyan' : 'gray'}
-                          />
-                        ))}
-                      </HStack>
                     </HStack>
-                  </VStack>
-                </LayoutContent>
-              }
-            />
+                  </Card>
+                ))}
+              </Grid>
+
+              <Divider />
+
+              <HStack hAlign="between" vAlign="center" gap={4} wrap="wrap" width="100%">
+                <VStack gap={0.5}>
+                  <Text type="supporting" size="sm" color="secondary" display="block">
+                    © 2026 Pactkeeper Team — FPT University SEP490. All Rights Reserved.
+                  </Text>
+                  <Text type="supporting" size="xsm" color="disabled" display="block">
+                    Pactkeeper Web SDK is the official game top-up platform. Please confirm
+                    your UID and Server before purchase.
+                  </Text>
+                </VStack>
+
+                <HStack gap={1.5} wrap="wrap">
+                  {PAYMENT_CHANNELS.map((channel) => (
+                    <Token
+                      key={channel}
+                      label={channel}
+                      size="sm"
+                      color={channel === 'PayOS' ? 'cyan' : 'gray'}
+                    />
+                  ))}
+                </HStack>
+              </HStack>
+            </VStack>
           </Section>
         </VStack>
       </AppShell>
@@ -532,23 +459,6 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
                 />
               );
             })}
-          </SideNavSection>
-
-          <Divider />
-
-          <SideNavSection title="Astryx Theme">
-            {ASTRYX_THEME_OPTIONS.map((opt) => (
-              <SideNavItem
-                key={opt.slug}
-                label={opt.label}
-                icon={<Icon icon={Palette} size="sm" />}
-                isSelected={themeSlug === opt.slug}
-                endContent={
-                  themeSlug === opt.slug ? <Icon icon={Check} size="xsm" color="accent" /> : undefined
-                }
-                onClick={() => setThemeSlug(opt.slug)}
-              />
-            ))}
           </SideNavSection>
 
           <Divider />

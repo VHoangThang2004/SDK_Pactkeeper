@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    optimizeDeps: {
+      include: ['@astryxdesign/core'],
+    },
     server: {
       proxy: {
         '/api': {

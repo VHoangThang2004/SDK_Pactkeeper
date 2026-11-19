@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import '@astryxdesign/core/reset.css';
 import '@astryxdesign/core/astryx.css';
+import './styles/global.css';
 import { AstryxRoot } from './components/AstryxRoot.tsx';
 import App from './App.tsx';
 

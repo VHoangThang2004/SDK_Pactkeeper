@@ -41,11 +41,11 @@ export const ProfileScreen: React.FC = () => {
     <LayoutWrapper>
       <VStack gap={5} width="100%">
         {!isTopUp && (
-          <VStack gap={3} width="100%">
-            <VStack gap={1}>
-              <Heading level={1}>{pageMeta.title}</Heading>
+          <VStack gap={4} width="100%">
+            <VStack gap={1.5}>
+              <Heading level={1} weight="bold">{pageMeta.title}</Heading>
               {pageMeta.subtitle && (
-                <Text type="supporting" size="sm" color="secondary" display="block">
+                <Text type="body" size="lg" color="secondary" display="block">
                   {pageMeta.subtitle}
                 </Text>
               )}

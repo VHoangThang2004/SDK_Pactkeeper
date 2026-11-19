@@ -7,11 +7,10 @@ import { Card } from '@astryxdesign/core/Card';
 import { Center } from '@astryxdesign/core/Center';
 import { Divider } from '@astryxdesign/core/Divider';
 import { Heading } from '@astryxdesign/core/Heading';
-import { Icon } from '@astryxdesign/core/Icon';
-import { HStack, VStack } from '@astryxdesign/core/Layout';
 import { Link } from '@astryxdesign/core/Link';
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { Spinner } from '@astryxdesign/core/Spinner';
+import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Text } from '@astryxdesign/core/Text';
 import { LayoutWrapper } from '../../components/LayoutWrapper/LayoutWrapper';
@@ -51,23 +50,33 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
     <LayoutWrapper>
       <Center minHeight="65vh">
         <Card elevation="med" padding={6} maxWidth={560} width="100%">
-          <VStack gap={5} width="100%">
-            <VStack gap={3} hAlign="center" width="100%">
-              <Icon
-                icon={isSuccess ? CheckCircle2 : XCircle}
-                size="lg"
-                color={isSuccess ? 'success' : 'error'}
-              />
+          <VStack gap={5}>
+            <VStack gap={3} hAlign="center">
+              {isSuccess ? (
+                <CheckCircle2
+                  size={56}
+                  style={{ color: 'var(--color-positive)' }}
+                  aria-hidden="true"
+                />
+              ) : (
+                <XCircle
+                  size={56}
+                  style={{ color: 'var(--color-negative)' }}
+                  aria-hidden="true"
+                />
+              )}
 
-              <Heading level={2} justify="center">
+              <Heading level={2}>
                 {isSuccess ? 'Payment Successful!' : 'Payment Cancelled'}
               </Heading>
 
-              <Text type="supporting" color="secondary" justify="center" display="block">
-                {isSuccess
-                  ? 'Your tribute has been acknowledged. In-game currency and rewards have been delivered directly to your account.'
-                  : 'The payment process was cancelled or timed out. No currency was deducted.'}
-              </Text>
+              <Center>
+                <Text type="supporting" color="secondary">
+                  {isSuccess
+                    ? 'Your tribute has been acknowledged. In-game currency and rewards have been delivered directly to your account.'
+                    : 'The payment process was cancelled or timed out. No currency was deducted.'}
+                </Text>
+              </Center>
             </VStack>
 
             {isSyncing && (
@@ -109,7 +118,7 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
                 </MetadataListItem>
               )}
 
-              <MetadataListItem label="Player Name">
+              <MetadataListItem label="Target Character">
                 {username || 'Player'}
               </MetadataListItem>
 
@@ -119,7 +128,7 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
 
               <MetadataListItem
                 label="Delivery Channel"
-                icon={<Icon icon={ShieldCheck} size="xsm" color="success" />}
+                icon={<ShieldCheck size={14} aria-hidden="true" />}
               >
                 In-Game Mailbox &amp; Inventory
               </MetadataListItem>
@@ -127,20 +136,20 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
 
             <Divider />
 
-            <VStack gap={2} width="100%">
+            <VStack gap={2}>
               <Button
                 variant="primary"
                 size="lg"
-                width="100%"
-                icon={<Icon icon={Gem} size="sm" />}
+                width="fill"
+                icon={<Gem size={16} aria-hidden="true" />}
                 label="Return to Treasury"
                 onClick={() => navigate('/profile/topup')}
               />
               <Button
                 variant="secondary"
                 size="md"
-                width="100%"
-                icon={<Icon icon={ScrollText} size="sm" />}
+                width="fill"
+                icon={<ScrollText size={16} aria-hidden="true" />}
                 label="View Ledger History"
                 onClick={() => navigate('/profile/history')}
               />
