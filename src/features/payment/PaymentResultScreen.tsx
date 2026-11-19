@@ -16,11 +16,13 @@ import { Text } from '@astryxdesign/core/Text';
 import { LayoutWrapper } from '../../components/LayoutWrapper/LayoutWrapper';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../core/network/apiClient';
+import { useTranslation } from '../../core/i18n';
 
 export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSuccess }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { username, playerId } = useAuthStore();
+  const { t, isVietnamese } = useTranslation();
 
   const searchParams = new URLSearchParams(location.search);
   const orderCode = searchParams.get('orderCode');
@@ -67,14 +69,14 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
               )}
 
               <Heading level={2}>
-                {isSuccess ? 'Payment Successful!' : 'Payment Cancelled'}
+                {isSuccess ? t('paymentResult.successTitle') : t('paymentResult.cancelTitle')}
               </Heading>
 
               <Center>
                 <Text type="supporting" color="secondary">
                   {isSuccess
-                    ? 'Your tribute has been acknowledged. In-game currency and rewards have been delivered directly to your account.'
-                    : 'The payment process was cancelled or timed out. No currency was deducted.'}
+                    ? t('paymentResult.successSubtitle')
+                    : t('paymentResult.cancelSubtitle')}
                 </Text>
               </Center>
             </VStack>
@@ -82,14 +84,14 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
             {isSyncing && (
               <Banner
                 status="info"
-                title="Reconciling Order"
-                description="Syncing transaction status with Game Server and PayOS..."
+                title={t('paymentResult.reconcilingOrder')}
+                description={t('paymentResult.reconcilingDesc')}
                 collapsible={false}
               >
                 <HStack gap={2} vAlign="center">
                   <Spinner size="sm" />
                   <Text type="supporting" size="sm">
-                    Please wait a moment
+                    {isVietnamese ? 'Vui lòng chờ trong giây lát' : 'Please wait a moment'}
                   </Text>
                 </HStack>
               </Banner>
@@ -98,39 +100,41 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
             <Divider />
 
             <MetadataList>
-              <MetadataListItem label="Transaction Status">
+              <MetadataListItem label={t('paymentResult.transactionStatus')}>
                 <HStack gap={2} vAlign="center">
                   <StatusDot
                     variant={isSuccess ? 'success' : 'error'}
                     label={isSuccess ? 'Payment confirmed' : 'Payment cancelled'}
                   />
                   <Text weight="semibold">
-                    {isSuccess ? 'CONFIRMED / PAID' : 'CANCELLED'}
+                    {isSuccess
+                      ? (isVietnamese ? 'ĐÃ XÁC NHẬN / HOÀN TẤT' : 'CONFIRMED / PAID')
+                      : (isVietnamese ? 'ĐÃ HỦY' : 'CANCELLED')}
                   </Text>
                 </HStack>
               </MetadataListItem>
 
               {orderCode && (
-                <MetadataListItem label="Order Code">
+                <MetadataListItem label={t('history.order')}>
                   <Text type="code" hasTabularNumbers>
                     TXN-{orderCode}
                   </Text>
                 </MetadataListItem>
               )}
 
-              <MetadataListItem label="Target Character">
-                {username || 'Player'}
+              <MetadataListItem label={t('paymentResult.targetCharacter')}>
+                {username || t('common.player')}
               </MetadataListItem>
 
-              <MetadataListItem label="Player ID">
-                <Text type="code">{playerId || 'Current Account'}</Text>
+              <MetadataListItem label={t('common.uid')}>
+                <Text type="code">{playerId || (isVietnamese ? 'Tài khoản hiện tại' : 'Current Account')}</Text>
               </MetadataListItem>
 
               <MetadataListItem
-                label="Delivery Channel"
+                label={t('paymentResult.deliveryChannel')}
                 icon={<ShieldCheck size={14} aria-hidden="true" />}
               >
-                In-Game Mailbox &amp; Inventory
+                {t('paymentResult.inGameMailbox')}
               </MetadataListItem>
             </MetadataList>
 
@@ -142,7 +146,7 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
                 size="lg"
                 width="fill"
                 icon={<Gem size={16} aria-hidden="true" />}
-                label="Return to Treasury"
+                label={t('paymentResult.returnToTreasury')}
                 onClick={() => navigate('/profile/topup')}
               />
               <Button
@@ -150,15 +154,15 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
                 size="md"
                 width="fill"
                 icon={<ScrollText size={16} aria-hidden="true" />}
-                label="View Ledger History"
+                label={t('paymentResult.viewLedgerHistory')}
                 onClick={() => navigate('/profile/history')}
               />
             </VStack>
 
             <Center>
               <Text type="supporting" size="sm" color="secondary">
-                Have questions regarding your order?{' '}
-                <Link href="/profile/support">Contact Counsel Support</Link>
+                {t('paymentResult.supportPrompt')}{' '}
+                <Link href="/profile/support">{t('paymentResult.contactSupport')}</Link>
               </Text>
             </Center>
           </VStack>

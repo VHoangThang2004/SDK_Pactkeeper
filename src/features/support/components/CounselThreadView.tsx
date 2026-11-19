@@ -22,12 +22,14 @@ import { Token } from '@astryxdesign/core/Token';
 import { useToast } from '@astryxdesign/core/Toast';
 import { apiClient } from '../../../core/network/apiClient';
 import { useSyncStore } from '../../../store/syncStore';
+import { useTranslation } from '../../../core/i18n';
 import { supportHubService, type SupportMessageDto } from '../services/SupportHubService';
 import { resolveSupportAttachmentUrl } from '../supportMedia';
 
 export const CounselThreadView: React.FC = () => {
   const showToast = useToast();
   const { setHasUnreadCounsel } = useSyncStore();
+  const { t, isVietnamese } = useTranslation();
 
   const [messages, setMessages] = useState<SupportMessageDto[]>([]);
   const [inputText, setInputText] = useState('');
@@ -178,18 +180,18 @@ export const CounselThreadView: React.FC = () => {
     <Card padding={0} elevation="low" className="chatShell">
       <HStack hAlign="between" vAlign="center" gap={3} padding={4}>
         <HStack gap={3} vAlign="center">
-          <Avatar name="Keeper of Records" size="sm" />
+          <Avatar name={t('counsel.keeperOfRecords')} size="sm" />
           <VStack gap={0.5}>
             <HStack gap={2} vAlign="center" wrap="wrap">
-              <Text weight="semibold">Keeper of Records</Text>
+              <Text weight="semibold">{t('counsel.keeperOfRecords')}</Text>
               <Token
                 icon={<ShieldCheck size={12} aria-hidden="true" />}
-                label="Official GM"
+                label={t('counsel.officialGm')}
                 size="sm"
               />
             </HStack>
             <Text type="supporting" size="2xs" color="secondary">
-              {isConnected ? 'Live Real-Time Counsel Online' : 'Active Support Counsel Service'}
+              {isConnected ? t('counsel.liveCounselOnline') : t('counsel.activeCounselService')}
             </Text>
           </VStack>
         </HStack>
@@ -201,7 +203,7 @@ export const CounselThreadView: React.FC = () => {
             isPulsing={isConnected}
           />
           <Text type="supporting" size="2xs" color="secondary">
-            {isConnected ? 'Live' : 'Syncing'}
+            {isConnected ? (isVietnamese ? 'Trực tuyến' : 'Live') : (isVietnamese ? 'Đang đồng bộ' : 'Syncing')}
           </Text>
         </HStack>
       </HStack>
@@ -213,7 +215,7 @@ export const CounselThreadView: React.FC = () => {
           <HStack gap={2} vAlign="center" padding={3}>
             <HelpCircle size={15} aria-hidden="true" />
             <Text weight="medium" size="sm">
-              Quick Inquiries &amp; Payment FAQ
+              {t('counsel.faqTitle')}
             </Text>
           </HStack>
         }
@@ -223,26 +225,26 @@ export const CounselThreadView: React.FC = () => {
           <CollapsibleGroup type="single" hasDividers>
             <Collapsible
               value="faq-delivery"
-              trigger={<Text size="sm" weight="medium">How are Gems and Bundles credited to my account?</Text>}
+              trigger={<Text size="sm" weight="medium">{t('counsel.faq1Q')}</Text>}
             >
               <Text type="supporting" size="sm" color="secondary">
-                Upon PayOS payment confirmation, your gems, equipment, and items are instantly synchronized with the game server and credited to your Player ID.
+                {t('counsel.faq1A')}
               </Text>
             </Collapsible>
             <Collapsible
               value="faq-vietqr"
-              trigger={<Text size="sm" weight="medium">How long is the PayOS VietQR code valid?</Text>}
+              trigger={<Text size="sm" weight="medium">{t('counsel.faq2Q')}</Text>}
             >
               <Text type="supporting" size="sm" color="secondary">
-                Each VietQR code remains active for 15 minutes. Once scanned and transferred with your banking app, the transaction completes within 3 to 15 seconds.
+                {t('counsel.faq2A')}
               </Text>
             </Collapsible>
             <Collapsible
               value="faq-support"
-              trigger={<Text size="sm" weight="medium">What if my balance has not updated?</Text>}
+              trigger={<Text size="sm" weight="medium">{t('counsel.faq3Q')}</Text>}
             >
               <Text type="supporting" size="sm" color="secondary">
-                Check your Transaction Ledger in the top navigation. If still pending, attach your bank transfer receipt right here in this Counsel chat to notify the support team.
+                {t('counsel.faq3A')}
               </Text>
             </Collapsible>
           </CollapsibleGroup>
@@ -265,8 +267,8 @@ export const CounselThreadView: React.FC = () => {
           emptyState={
             <EmptyState
               icon={<Bot size={32} aria-hidden="true" />}
-              title="Counsel Live Support"
-              description="Have an inquiry about your top-up, in-game deliveries, or account? Send a message below to summon the Keeper of Records."
+              title={t('counsel.emptyChatTitle')}
+              description={t('counsel.emptyChatDesc')}
             />
           }
           composer={
@@ -277,15 +279,15 @@ export const CounselThreadView: React.FC = () => {
               isDisabled={isUploading || isSending}
               placeholder={
                 isUploading
-                  ? 'Uploading attachment...'
-                  : 'Type your message to the Keeper of Records...'
+                  ? t('counsel.uploading')
+                  : t('counsel.inputPlaceholder')
               }
               footerActions={
                 <IconButton
                   icon={<Paperclip size={16} aria-hidden="true" />}
                   variant="ghost"
                   size="sm"
-                  label="Attach screenshot or receipt image"
+                  label={t('counsel.attachImage')}
                   isDisabled={isUploading}
                   onClick={() => fileInputRef.current?.click()}
                 />
@@ -303,7 +305,7 @@ export const CounselThreadView: React.FC = () => {
                   <ChatMessage
                     key={msg.id}
                     sender={self ? 'user' : 'assistant'}
-                    name={self ? 'You' : 'Keeper of Records'}
+                    name={self ? t('counsel.you') : t('counsel.keeperOfRecords')}
                     metadata={
                       <Timestamp
                         value={msg.createdAt}

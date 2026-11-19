@@ -14,9 +14,11 @@ import { Button } from '@astryxdesign/core/Button';
 import { Icon } from '@astryxdesign/core/Icon';
 import { Text } from '@astryxdesign/core/Text';
 import { useAuthStore } from '../../store/authStore';
+import { useTranslation } from '../../core/i18n';
 
 export const AuthPromptModal: React.FC = () => {
   const { authPrompt, closeAuthPrompt, setPendingRedirect } = useAuthStore();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleConfirmLogin = () => {
@@ -44,8 +46,8 @@ export const AuthPromptModal: React.FC = () => {
         defaultHasDividers={false}
         header={
           <DialogHeader
-            title={authPrompt?.title || 'Sign In Required'}
-            subtitle="Guest preview restriction"
+            title={authPrompt?.title || t('nav.authRequiredTitle')}
+            subtitle={t('nav.signInToUnlock')}
             startContent={<Icon icon={Lock} color="accent" size="md" />}
             onOpenChange={(open) => {
               if (!open) {
@@ -59,12 +61,12 @@ export const AuthPromptModal: React.FC = () => {
           <LayoutContent isScrollable={false}>
             <VStack gap={3}>
               <Text type="body" color="primary" display="block">
-                {authPrompt?.message || 'Sign in to access this Pactkeeper feature.'}
+                {authPrompt?.message || t('nav.signInToUnlock')}
               </Text>
               <Banner
                 status="info"
-                title="Verified Player Access"
-                description="Sign in with your Game Account or Google to verify your Player ID and sync purchases in real time."
+                title={t('nav.verifiedAccessTitle')}
+                description={t('nav.verifiedAccessDesc')}
                 icon={<Icon icon={ShieldCheck} size="sm" />}
               />
             </VStack>
@@ -73,9 +75,13 @@ export const AuthPromptModal: React.FC = () => {
         footer={
           <LayoutFooter hasDivider>
             <HStack gap={2} hAlign="end" wrap="wrap" width="100%">
-              <Button label="Continue Browsing" variant="secondary" onClick={closeAuthPrompt} />
               <Button
-                label="Sign In Now"
+                label={t('nav.continueBrowsing')}
+                variant="secondary"
+                onClick={closeAuthPrompt}
+              />
+              <Button
+                label={t('nav.signInNow')}
                 variant="primary"
                 icon={<Icon icon={LogIn} size="sm" />}
                 onClick={handleConfirmLogin}

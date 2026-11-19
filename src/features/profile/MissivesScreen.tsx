@@ -25,6 +25,7 @@ import { Text } from '@astryxdesign/core/Text';
 import { apiClient } from '../../core/network/apiClient';
 import { supportHubService } from '../support/services/SupportHubService';
 import { useSyncStore } from '../../store/syncStore';
+import { useTranslation } from '../../core/i18n';
 
 interface NotificationModel {
   id: string;
@@ -52,6 +53,7 @@ const formatMissiveTime = (dateStr?: string): string => {
 };
 
 export const MissivesScreen: React.FC = () => {
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState<NotificationModel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
@@ -181,7 +183,7 @@ export const MissivesScreen: React.FC = () => {
             <Icon icon={Mail} size="lg" color="accent" />
             <VStack gap={0.5}>
               <Text type="supporting" size="base" color="secondary" weight="semibold">
-                UNREAD NOTICES
+                {t('missives.unreadNotices')}
               </Text>
               <HStack gap={2} vAlign="center">
                 <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
@@ -198,7 +200,7 @@ export const MissivesScreen: React.FC = () => {
             <Icon icon={Inbox} size="lg" color="secondary" />
             <VStack gap={0.5}>
               <Text type="supporting" size="base" color="secondary" weight="semibold">
-                TOTAL ARCHIVES
+                {t('missives.totalArchives')}
               </Text>
               <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
                 {notifications.length}
@@ -212,12 +214,12 @@ export const MissivesScreen: React.FC = () => {
             <Icon icon={Radio} size="lg" color="success" />
             <VStack gap={0.5}>
               <Text type="supporting" size="base" color="secondary" weight="semibold">
-                SYSTEM CHANNEL
+                {t('missives.systemChannel')}
               </Text>
               <HStack gap={2} vAlign="center">
                 <StatusDot variant="success" label="Active" isPulsing />
                 <Text type="body" size="lg" weight="medium">
-                  Live Dispatch Active
+                  {t('missives.liveDispatchActive')}
                 </Text>
               </HStack>
             </VStack>
@@ -227,7 +229,7 @@ export const MissivesScreen: React.FC = () => {
 
       <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
         <HStack gap={2} vAlign="center">
-          <Heading level={2} weight="bold">Recent Missives</Heading>
+          <Heading level={2} weight="bold">{t('missives.recentMissives')}</Heading>
           {unreadCount > 0 && <Badge label={unreadCount} variant="neutral" />}
         </HStack>
 
@@ -235,7 +237,7 @@ export const MissivesScreen: React.FC = () => {
           variant="secondary"
           size="md"
           icon={<Icon icon={CheckCheck} size="sm" />}
-          label="Mark all as read"
+          label={t('missives.markAllRead')}
           isLoading={isMarkingAll}
           isDisabled={unreadCount === 0 || isMarkingAll}
           onClick={markAllAsRead}
@@ -254,8 +256,8 @@ export const MissivesScreen: React.FC = () => {
         <Card padding={6}>
           <EmptyState
             icon={<Icon icon={BellOff} size="lg" color="accent" />}
-            title="No Missives Yet"
-            description="The raven brought no messages today. Payment confirmations, system notices, and counsel replies will appear here in real time."
+            title={t('missives.noMissivesTitle')}
+            description={t('missives.noMissivesDesc')}
           />
         </Card>
       ) : (

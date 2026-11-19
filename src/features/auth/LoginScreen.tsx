@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Moon,
   Sun,
+  Languages,
 } from 'lucide-react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Banner } from '@astryxdesign/core/Banner';
@@ -24,6 +25,7 @@ import { Text } from '@astryxdesign/core/Text';
 import { TextInput } from '@astryxdesign/core/TextInput';
 import { useThemeMode } from '../../hooks/useThemeMode';
 import { useAuthStore } from '../../store/authStore';
+import { useTranslation } from '../../core/i18n';
 import { loginUseCase, loginWithGoogleUseCase } from './di';
 
 export const LoginScreen: React.FC = () => {
@@ -35,6 +37,7 @@ export const LoginScreen: React.FC = () => {
 
   const { login, setPendingRedirect } = useAuthStore();
   const { mode, toggleMode } = useThemeMode();
+  const { t, isVietnamese, toggleLanguage } = useTranslation();
   const navigate = useNavigate();
 
   const handleBrowseAsGuest = () => {
@@ -77,12 +80,20 @@ export const LoginScreen: React.FC = () => {
   return (
     <Center padding={6} minHeight="100dvh" width="100%">
       <VStack gap={5} width="100%" maxWidth={460} hAlign="center">
-        <HStack hAlign="end" width="100%">
+        <HStack hAlign="end" vAlign="center" gap={2} width="100%">
           <IconButton
             variant="ghost"
             size="sm"
-            label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            tooltip={mode === 'dark' ? 'Light Mode (Parchment)' : 'Dark Mode (Obsidian Gold)'}
+            label={isVietnamese ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+            tooltip={isVietnamese ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+            icon={<Icon icon={Languages} size="sm" />}
+            onClick={toggleLanguage}
+          />
+          <IconButton
+            variant="ghost"
+            size="sm"
+            label={mode === 'dark' ? t('common.switchToLight') : t('common.switchToDark')}
+            tooltip={mode === 'dark' ? t('common.themeLight') : t('common.themeDark')}
             icon={<Icon icon={mode === 'dark' ? Sun : Moon} size="sm" />}
             onClick={toggleMode}
           />
@@ -96,7 +107,7 @@ export const LoginScreen: React.FC = () => {
             PACTKEEPER
           </Heading>
           <Text type="supporting" size="sm" color="secondary" justify="center" display="block">
-            Official Web Top-Up Center &amp; Account Portal
+            {t('common.tagline')}
           </Text>
         </VStack>
 
@@ -104,7 +115,7 @@ export const LoginScreen: React.FC = () => {
           <VStack gap={5} width="100%">
             <VStack gap={4} width="100%">
               <Text type="supporting" size="sm" color="secondary" justify="center" display="block">
-                Sign in to your Pactkeeper player account to access the Treasury and recharge Gems.
+                {t('auth.signInSubtitle')}
               </Text>
 
               {!usePasswordLogin ? (
@@ -115,7 +126,7 @@ export const LoginScreen: React.FC = () => {
                         onSuccess={(credentialResponse) =>
                           loginWithGoogleMutation(credentialResponse.credential)
                         }
-                        onError={() => setError('Google login was cancelled or failed')}
+                        onError={() => setError(isVietnamese ? 'Đăng nhập Google thất bại hoặc đã bị hủy' : 'Google login was cancelled or failed')}
                         useOneTap
                         theme={mode === 'dark' ? 'filled_black' : 'outline'}
                         text="signin_with"
@@ -127,13 +138,13 @@ export const LoginScreen: React.FC = () => {
                   <HStack gap={3} vAlign="center" width="100%">
                     <Divider />
                     <Text type="supporting" size="xsm" color="disabled">
-                      OR
+                      {isVietnamese ? 'HOẶC' : 'OR'}
                     </Text>
                     <Divider />
                   </HStack>
 
                   <Button
-                    label="Sign in with Game Account"
+                    label={isVietnamese ? 'Đăng nhập bằng tài khoản Game' : 'Sign in with Game Account'}
                     variant="secondary"
                     width="100%"
                     icon={<Icon icon={LogIn} size="sm" />}
@@ -147,7 +158,7 @@ export const LoginScreen: React.FC = () => {
                 <form onSubmit={handleNormalLogin}>
                   <VStack gap={4} width="100%">
                     <TextInput
-                      label="Player Account / Username"
+                      label={isVietnamese ? 'Tài khoản Game / Tên đăng nhập' : 'Player Account / Username'}
                       placeholder="e.g. player1"
                       value={username}
                       onChange={setUsername}
@@ -158,9 +169,9 @@ export const LoginScreen: React.FC = () => {
                     />
 
                     <TextInput
-                      label="Password"
+                      label={isVietnamese ? 'Mật khẩu' : 'Password'}
                       type="password"
-                      placeholder="Enter password"
+                      placeholder={isVietnamese ? 'Nhập mật khẩu' : 'Enter password'}
                       value={password}
                       onChange={setPassword}
                       startIcon={KeyRound}
@@ -171,7 +182,7 @@ export const LoginScreen: React.FC = () => {
 
                     <Button
                       type="submit"
-                      label="Sign In to Player Account"
+                      label={isVietnamese ? 'Đăng nhập vào tài khoản Game' : 'Sign In to Player Account'}
                       variant="primary"
                       size="lg"
                       width="100%"
@@ -179,7 +190,7 @@ export const LoginScreen: React.FC = () => {
                     />
 
                     <Button
-                      label="Use Google Sign-In Instead"
+                      label={isVietnamese ? 'Quay lại Đăng nhập Google' : 'Use Google Sign-In Instead'}
                       variant="ghost"
                       width="100%"
                       onClick={() => {
@@ -192,7 +203,7 @@ export const LoginScreen: React.FC = () => {
               )}
 
               {error && (
-                <Banner status="error" title="Sign In Failed" description={error} role="alert" />
+                <Banner status="error" title={isVietnamese ? 'Đăng Nhập Thất Bại' : 'Sign In Failed'} description={error} role="alert" />
               )}
 
               <Divider />
@@ -201,13 +212,13 @@ export const LoginScreen: React.FC = () => {
                 <HStack gap={2} vAlign="center">
                   <Icon icon={CheckCircle2} size="xsm" color="accent" />
                   <Text type="supporting" size="xsm" color="secondary">
-                    Instant automatic in-game delivery
+                    {t('trust.instantDelivery')}
                   </Text>
                 </HStack>
                 <HStack gap={2} vAlign="center">
                   <Icon icon={CheckCircle2} size="xsm" color="accent" />
                   <Text type="supporting" size="xsm" color="secondary">
-                    Official PayOS gateway integration
+                    {t('trust.securePayment')}
                   </Text>
                 </HStack>
               </VStack>
@@ -216,7 +227,7 @@ export const LoginScreen: React.FC = () => {
             <Divider />
 
             <Button
-              label="Browse Top-Up Price List as Guest"
+              label={isVietnamese ? 'Xem bảng giá nạp với tư cách Khách' : 'Browse Top-Up Price List as Guest'}
               variant="ghost"
               width="100%"
               icon={<Icon icon={ArrowLeft} size="sm" />}

@@ -29,6 +29,7 @@ import { LayoutWrapper } from '../../components/LayoutWrapper/LayoutWrapper';
 import { GemArt } from '../../components/GameIcons/GemArt';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../core/network/apiClient';
+import { useTranslation } from '../../core/i18n';
 
 interface Pack {
   id: string;
@@ -50,6 +51,7 @@ export const CheckoutScreen: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const pack = (location.state as { pack?: Pack } | null)?.pack;
+  const { t, isVietnamese } = useTranslation();
 
   const { username, playerId } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -61,12 +63,12 @@ export const CheckoutScreen: React.FC = () => {
         <Center minHeight="60vh">
           <EmptyState
             icon={<AlertCircle size={32} aria-hidden="true" />}
-            title="No Package Selected"
-            description="Please select a Gem tier or Bundle from the Treasury catalog before proceeding to checkout."
+            title={t('checkout.noPackTitle')}
+            description={t('checkout.noPackDesc')}
             actions={
               <Button
                 variant="primary"
-                label="Return to Treasury"
+                label={t('common.backToTreasury')}
                 onClick={() => navigate('/profile/topup')}
               />
             }
@@ -122,13 +124,13 @@ export const CheckoutScreen: React.FC = () => {
             variant="ghost"
             size="sm"
             icon={<ArrowLeft size={16} aria-hidden="true" />}
-            label="Return to Treasury"
+            label={t('common.backToTreasury')}
             onClick={() => navigate(-1)}
           />
           <HStack gap={2} vAlign="center">
             <Lock size={14} aria-hidden="true" />
             <Text type="supporting" size="sm" color="secondary">
-              Secure 256-Bit SSL Checkout
+              {t('checkout.secureSsl')}
             </Text>
           </HStack>
         </HStack>
@@ -148,7 +150,7 @@ export const CheckoutScreen: React.FC = () => {
                   <Token label="Pactkeeper Official Server" size="sm" />
                 </HStack>
                 <Text type="supporting" size="sm" color="secondary">
-                  Target Player ID: {playerId || 'Current Account'}
+                  {t('checkout.targetPlayerId')}: {playerId || 'Current Account'}
                 </Text>
               </VStack>
             </HStack>
@@ -156,7 +158,7 @@ export const CheckoutScreen: React.FC = () => {
             <HStack gap={2} vAlign="center">
               <StatusDot variant="success" label="Delivery destination confirmed" />
               <Text size="sm" weight="medium">
-                Delivery Destination Confirmed
+                {t('checkout.deliveryDestinationConfirmed')}
               </Text>
             </HStack>
           </HStack>
@@ -169,8 +171,8 @@ export const CheckoutScreen: React.FC = () => {
             <Card padding={5} elevation="low">
               <VStack gap={4}>
                 <HStack gap={2} vAlign="center">
-                  <Token label="Step 1" size="sm" />
-                  <Heading level={3}>Order Item Details</Heading>
+                  <Token label={t('checkout.step1')} size="sm" />
+                  <Heading level={3}>{t('checkout.orderItemDetails')}</Heading>
                 </HStack>
 
                 <Divider />
@@ -186,21 +188,21 @@ export const CheckoutScreen: React.FC = () => {
                     <HStack gap={2} vAlign="center">
                       <Gem size={18} aria-hidden="true" />
                       <Text weight="semibold" size="lg" hasTabularNumbers>
-                        {pack.gemsAmount.toLocaleString('en-US')} Gems
+                        {pack.gemsAmount.toLocaleString('en-US')} Gem
                       </Text>
                     </HStack>
 
                     {hasInclusions && (
                       <VStack gap={2}>
                         <Text type="supporting" size="sm" color="secondary">
-                          Included in package:
+                          {t('topup.includedPactItems')}
                         </Text>
                         <HStack gap={1.5} wrap="wrap">
                           {unitList.map((n, i) => (
                             <Token
                               key={`u-${i}`}
                               icon={<Swords size={12} aria-hidden="true" />}
-                              label={`Hero: ${n}`}
+                              label={`${isVietnamese ? 'Tướng' : 'Hero'}: ${n}`}
                               size="sm"
                             />
                           ))}
@@ -208,7 +210,7 @@ export const CheckoutScreen: React.FC = () => {
                             <Token
                               key={`w-${i}`}
                               icon={<Shield size={12} aria-hidden="true" />}
-                              label={`Weapon: ${n}`}
+                              label={`${isVietnamese ? 'Vũ khí' : 'Weapon'}: ${n}`}
                               size="sm"
                             />
                           ))}
@@ -216,7 +218,7 @@ export const CheckoutScreen: React.FC = () => {
                             <Token
                               key={`t-${i}`}
                               icon={<Sparkles size={12} aria-hidden="true" />}
-                              label={`Trinket: ${n}`}
+                              label={`${isVietnamese ? 'Trang sức' : 'Trinket'}: ${n}`}
                               size="sm"
                             />
                           ))}
@@ -231,30 +233,30 @@ export const CheckoutScreen: React.FC = () => {
             <Card padding={5} elevation="low">
               <VStack gap={4}>
                 <HStack gap={2} vAlign="center">
-                  <Token label="Step 2" size="sm" />
-                  <Heading level={3}>Payment Gateway</Heading>
+                  <Token label={t('checkout.step2')} size="sm" />
+                  <Heading level={3}>{t('checkout.paymentGateway')}</Heading>
                 </HStack>
 
                 <Divider />
 
                 <Banner
                   status="info"
-                  title="PayOS Hosted Checkout (VietQR / Napas 247)"
-                  description="Proceeding creates a live PayOS order with a 15-minute VietQR code. Scan with any Vietnamese banking app for 0 VND fee and instant in-game credit."
+                  title={t('checkout.payosBannerTitle')}
+                  description={t('checkout.payosBannerDesc')}
                 />
 
                 <MetadataList>
-                  <MetadataListItem label="Provider" icon={<QrCode size={14} aria-hidden="true" />}>
+                  <MetadataListItem label={t('checkout.provider')} icon={<QrCode size={14} aria-hidden="true" />}>
                     PayOS Official Gateway
                   </MetadataListItem>
-                  <MetadataListItem label="Supported Channels">
+                  <MetadataListItem label={t('checkout.supportedChannels')}>
                     <HStack gap={1.5} wrap="wrap">
                       <Token label="VietQR" size="sm" />
                       <Token label="Napas 247" size="sm" />
-                      <Token label="Banking Apps" size="sm" />
+                      <Token label={isVietnamese ? 'App Ngân hàng' : 'Banking Apps'} size="sm" />
                     </HStack>
                   </MetadataListItem>
-                  <MetadataListItem label="Gateway Fee">0 VND (Free)</MetadataListItem>
+                  <MetadataListItem label={t('checkout.gatewayFee')}>{t('checkout.free')}</MetadataListItem>
                 </MetadataList>
               </VStack>
             </Card>
@@ -263,43 +265,43 @@ export const CheckoutScreen: React.FC = () => {
           {/* Right column: Summary & Pay CTA */}
           <Card padding={5} elevation="med" className="summaryCard">
             <VStack gap={4}>
-              <Heading level={3}>Payment Summary</Heading>
+              <Heading level={3}>{t('checkout.paymentSummary')}</Heading>
 
               <Divider />
 
               <MetadataList>
-                <MetadataListItem label="Package">{pack.name}</MetadataListItem>
-                <MetadataListItem label="Gems Granted">
+                <MetadataListItem label={isVietnamese ? 'Gói nạp' : 'Package'}>{pack.name}</MetadataListItem>
+                <MetadataListItem label={t('checkout.gemsGranted')}>
                   <Text hasTabularNumbers>
-                    {pack.gemsAmount.toLocaleString('en-US')} Gems
+                    {pack.gemsAmount.toLocaleString('en-US')} Gem
                   </Text>
                 </MetadataListItem>
                 {hasInclusions && (
-                  <MetadataListItem label="Bonus Items">
-                    {totalInclusions} {totalInclusions === 1 ? 'Item' : 'Items'} Included
+                  <MetadataListItem label={t('checkout.bonusItems')}>
+                    {t('checkout.itemsIncluded', { count: totalInclusions })}
                   </MetadataListItem>
                 )}
-                <MetadataListItem label="Gateway Fee">0 VND (Free)</MetadataListItem>
+                <MetadataListItem label={t('checkout.gatewayFee')}>{t('checkout.free')}</MetadataListItem>
               </MetadataList>
 
               <Divider />
 
               <HStack hAlign="between" vAlign="center">
                 <Text weight="medium" color="secondary">
-                  Total Price
+                  {isVietnamese ? 'Tổng Thanh Toán' : 'Total Price'}
                 </Text>
                 <Heading level={3}>{formatPrice(pack.priceVnd)}</Heading>
               </HStack>
 
               {errorMessage && (
-                <Banner status="error" title="Checkout Error" description={errorMessage} />
+                <Banner status="error" title={isVietnamese ? 'Lỗi Thanh Toán' : 'Checkout Error'} description={errorMessage} />
               )}
 
               <Button
                 variant="primary"
                 size="lg"
                 width="fill"
-                label={`Proceed to Pay (${formatPrice(pack.priceVnd)})`}
+                label={t('checkout.proceedToPay', { price: formatPrice(pack.priceVnd) })}
                 onClick={handlePay}
                 isLoading={isLoading}
                 isDisabled={isLoading}
@@ -308,15 +310,12 @@ export const CheckoutScreen: React.FC = () => {
               <HStack gap={2} vAlign="start">
                 <ShieldCheck size={16} aria-hidden="true" className="guaranteeIcon" />
                 <Text type="supporting" size="sm" color="secondary">
-                  100% Instant Delivery via PayOS. In-game currency and items are automatically
-                  credited to your player account upon transaction confirmation.
+                  {t('checkout.deliveryGuarantee')}
                 </Text>
               </HStack>
 
               <Text type="supporting" size="2xs" color="secondary">
-                By clicking &ldquo;Proceed to Pay&rdquo;, you agree to the Pactkeeper Payment
-                Terms &amp; Conditions. All sales are processed directly into the designated player
-                account.
+                {t('checkout.termsNotice')}
               </Text>
             </VStack>
           </Card>

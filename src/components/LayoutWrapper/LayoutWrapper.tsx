@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Gem,
@@ -15,6 +15,7 @@ import {
   Receipt,
   Mail,
   MessageSquare,
+  Languages,
 } from 'lucide-react';
 import { AppShell } from '@astryxdesign/core/AppShell';
 import { Avatar, AvatarStatusDot } from '@astryxdesign/core/Avatar';
@@ -40,30 +41,13 @@ import { TopNav, TopNavHeading, TopNavItem } from '@astryxdesign/core/TopNav';
 import { useThemeMode } from '../../hooks/useThemeMode';
 import { useAuthStore } from '../../store/authStore';
 import { useSyncStore } from '../../store/syncStore';
-import { PLAYER_NAV_ITEMS } from '../navigation/playerNavItems';
+import { useTranslation } from '../../core/i18n';
+import { usePlayerNavItems } from '../navigation/playerNavItems';
 import { AuthPromptModal } from '../AuthPromptModal/AuthPromptModal';
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
 }
-
-const TRUST_PILLARS = [
-  {
-    title: 'Instant In-Game Delivery',
-    description: 'Gems and bundles are credited automatically to your account within seconds.',
-    icon: Zap,
-  },
-  {
-    title: '100% Certified & Secure',
-    description: 'Encrypted payment channels powered by PayOS and national banking standards.',
-    icon: ShieldCheck,
-  },
-  {
-    title: '24/7 Live Counsel',
-    description: 'Real-time assistance from Game Masters to resolve payment and account queries.',
-    icon: Headphones,
-  },
-] as const;
 
 const PAYMENT_CHANNELS = ['VietQR', 'Napas 247', 'PayOS', 'Visa / Master'] as const;
 
@@ -79,6 +63,8 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
     setHasUnreadCounsel,
   } = useSyncStore();
   const { mode, toggleMode } = useThemeMode();
+  const { t, language, toggleLanguage, isVietnamese } = useTranslation();
+  const navItems = usePlayerNavItems();
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
@@ -89,6 +75,27 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   const prevUnreadCountRef = useRef<number>(unreadCount);
   const prevUnreadCounselRef = useRef<boolean>(hasUnreadCounsel);
   const prevProfileTsRef = useRef<number>(profileUpdateTimestamp);
+
+  const trustPillars = useMemo(
+    () => [
+      {
+        title: t('trust.instantDelivery'),
+        description: t('trust.instantDeliveryDesc'),
+        icon: Zap,
+      },
+      {
+        title: t('trust.securePayment'),
+        description: t('trust.securePaymentDesc'),
+        icon: ShieldCheck,
+      },
+      {
+        title: t('trust.liveSupport'),
+        description: t('trust.liveSupportDesc'),
+        icon: Headphones,
+      },
+    ],
+    [t]
+  );
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -115,14 +122,14 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
       prevProfileTsRef.current = profileUpdateTimestamp;
       if (Date.now() - loginStartedAtRef.current > 1200) {
         toast({
-          body: 'Player profile and gem balance updated.',
+          body: t('common.profileUpdatedToast'),
           type: 'info',
           uniqueID: 'pactkeeper-profile-sync',
           collisionBehavior: 'overwrite',
         });
       }
     }
-  }, [isLoggedIn, profileUpdateTimestamp, toast]);
+  }, [isLoggedIn, profileUpdateTimestamp, t, toast]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -130,13 +137,13 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
     prevUnreadCounselRef.current = hasUnreadCounsel;
     if (becameUnread && !location.pathname.startsWith('/profile/support')) {
       toast({
-        body: 'New reply from Keeper of Records in Counsel Live Support.',
+        body: t('common.counselReplyToast'),
         type: 'info',
         uniqueID: 'pactkeeper-counsel-reply',
         collisionBehavior: 'overwrite',
       });
     }
-  }, [isLoggedIn, hasUnreadCounsel, location.pathname, toast]);
+  }, [isLoggedIn, hasUnreadCounsel, location.pathname, t, toast]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -148,13 +155,13 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
       Date.now() - loginStartedAtRef.current > 2500
     ) {
       toast({
-        body: 'You have a new Missive in your inbox.',
+        body: t('common.newMissiveToast'),
         type: 'info',
         uniqueID: 'pactkeeper-new-missive',
         collisionBehavior: 'overwrite',
       });
     }
-  }, [isLoggedIn, unreadCount, toast]);
+  }, [isLoggedIn, unreadCount, t, toast]);
 
   const displayUid = playerId
     ? playerId.length > 8
@@ -166,7 +173,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
     if (!playerId) return;
     navigator.clipboard.writeText(playerId);
     toast({
-      body: `Player ID (${playerId}) copied to clipboard.`,
+      body: t('common.uidCopiedToast', { id: playerId }),
       type: 'info',
       uniqueID: 'pactkeeper-copy-uid',
       collisionBehavior: 'overwrite',
@@ -180,21 +187,28 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   };
 
   const handleSignOut = () => {
-    setIsMobileNavOpen(false);
     logout();
+    toast({
+      body: isVietnamese ? 'Bạn đã đăng xuất.' : 'You have been signed out.',
+      type: 'info',
+      uniqueID: 'pactkeeper-signout',
+      collisionBehavior: 'overwrite',
+    });
+    navigate('/profile/topup');
   };
 
-  const desktopNavItems = PLAYER_NAV_ITEMS.map((item) => {
+  const desktopNavItems = navItems.map((item) => {
     if (item.requiresAuth && !isLoggedIn) {
       return (
         <TopNavItem
           key={item.path}
           label={item.label}
           icon={<Icon icon={item.icon} size="sm" />}
+          isSelected={false}
           onClick={() =>
             openAuthPrompt({
               title: item.authPromptTitle,
-              message: item.authPromptMessage || 'Please sign in to access this feature.',
+              message: item.authPromptMessage || t('nav.signInToUnlock'),
               redirectTo: { path: item.path },
             })
           }
@@ -233,7 +247,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
           {item.path === '/profile/support' && hasUnreadCounsel && (
             <StatusDot
               variant="warning"
-              label="New answer from Keeper of Records"
+              label={t('nav.newCounselAnswer')}
               isPulsing
             />
           )}
@@ -244,11 +258,22 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
 
   const endContent = (
     <HStack gap={2} vAlign="center">
+      {/* Language Switcher Toggle */}
       <IconButton
         variant="ghost"
         size="sm"
-        label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        tooltip={mode === 'dark' ? 'Light Mode (Parchment)' : 'Dark Mode (Obsidian Gold)'}
+        label={isVietnamese ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+        tooltip={isVietnamese ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+        icon={<Icon icon={Languages} size="sm" />}
+        onClick={toggleLanguage}
+      />
+
+      {/* Theme Switcher Toggle */}
+      <IconButton
+        variant="ghost"
+        size="sm"
+        label={mode === 'dark' ? t('common.switchToLight') : t('common.switchToDark')}
+        tooltip={mode === 'dark' ? t('common.themeLight') : t('common.themeDark')}
         icon={<Icon icon={mode === 'dark' ? Sun : Moon} size="sm" />}
         onClick={toggleMode}
       />
@@ -258,7 +283,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
           button={{
             variant: 'ghost',
             size: 'sm',
-            label: username || 'Player',
+            label: username || t('common.player'),
             endContent: (
               <Avatar
                 size="sm"
@@ -276,33 +301,33 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
           items={[
             {
               id: 'uid-copy',
-              label: `UID: ${displayUid || 'Current Account'}`,
-              description: 'Click to copy full player ID',
+              label: `UID: ${displayUid || 'Account'}`,
+              description: t('menu.copyUidDesc'),
               icon: <Icon icon={Copy} size="xsm" />,
               onClick: handleCopyUid,
             },
             {
               id: 'menu-ledger',
-              label: 'Treasury Ledger',
+              label: t('menu.treasuryLedger'),
               icon: <Icon icon={Receipt} size="xsm" />,
               onClick: () => navigate('/profile/history'),
             },
             {
               id: 'menu-missives',
-              label: 'Missives Inbox',
+              label: t('menu.missivesInbox'),
               icon: <Icon icon={Mail} size="xsm" />,
               endContent: unreadCount > 0 ? <Badge variant="error" label={unreadCount} /> : undefined,
               onClick: () => navigate('/profile/missives'),
             },
             {
               id: 'menu-counsel',
-              label: 'Counsel Support',
+              label: t('menu.counselSupport'),
               icon: <Icon icon={MessageSquare} size="xsm" />,
               onClick: () => navigate('/profile/support'),
             },
             {
               id: 'menu-signout',
-              label: 'Sign Out',
+              label: t('common.signOut'),
               variant: 'destructive',
               icon: <Icon icon={LogOut} size="xsm" />,
               onClick: handleSignOut,
@@ -314,11 +339,11 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
           <HStack gap={1.5} vAlign="center" className="desktopOnly">
             <StatusDot variant="neutral" label="Guest session" />
             <Text type="supporting" size="sm" color="secondary">
-              Guest
+              {t('common.guest')}
             </Text>
           </HStack>
           <Button
-            label="Sign In"
+            label={t('common.signIn')}
             variant="primary"
             size="sm"
             icon={<Icon icon={LogIn} size="sm" />}
@@ -364,7 +389,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
           <Section variant="section" dividers={['top']} padding={6} width="100%">
             <VStack gap={5} width="100%">
               <Grid columns={{ minWidth: 240, max: 3, repeat: 'fit' }} gap={4} width="100%">
-                {TRUST_PILLARS.map((pillar) => (
+                {trustPillars.map((pillar) => (
                   <Card key={pillar.title} variant="default" padding={4}>
                     <HStack gap={3} vAlign="start">
                       <Icon icon={pillar.icon} size="lg" color="accent" />
@@ -384,11 +409,12 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
               <HStack hAlign="between" vAlign="center" gap={4} wrap="wrap" width="100%">
                 <VStack gap={0.5}>
                   <Text type="supporting" size="sm" color="secondary" display="block">
-                    © 2026 Pactkeeper Team — FPT University SEP490. All Rights Reserved.
+                    © 2026 Pactkeeper Team — FPT University SEP490. {t('common.allRightsReserved')}
                   </Text>
                   <Text type="supporting" size="xsm" color="disabled" display="block">
-                    Pactkeeper Web SDK is the official game top-up platform. Please confirm
-                    your UID and Server before purchase.
+                    {isVietnamese
+                      ? 'Pactkeeper Web SDK là cổng nạp game chính thức. Vui lòng kiểm tra kỹ UID và Máy Chủ trước khi thực hiện giao dịch.'
+                      : 'Pactkeeper Web SDK is the official game top-up platform. Please confirm your UID and Server before purchase.'}
                   </Text>
                 </VStack>
 
@@ -414,8 +440,8 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
         header="Pactkeeper Portal"
       >
         <VStack gap={4} width="100%">
-          <SideNavSection title="Navigation">
-            {PLAYER_NAV_ITEMS.map((item) => {
+          <SideNavSection title={isVietnamese ? 'Điều hướng' : 'Navigation'}>
+            {navItems.map((item) => {
               if (item.requiresAuth && !isLoggedIn) {
                 return (
                   <SideNavItem
@@ -428,7 +454,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
                       openAuthPrompt({
                         title: item.authPromptTitle,
                         message:
-                          item.authPromptMessage || 'Please sign in to access this feature.',
+                          item.authPromptMessage || t('nav.signInToUnlock'),
                         redirectTo: { path: item.path },
                       });
                     }}
@@ -447,7 +473,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
                     item.path === '/profile/missives' && unreadCount > 0 ? (
                       <Badge variant="error" label={unreadCount > 99 ? '99+' : unreadCount} />
                     ) : item.path === '/profile/support' && hasUnreadCounsel ? (
-                      <StatusDot variant="warning" label="New reply" isPulsing />
+                      <StatusDot variant="warning" label={t('nav.newCounselAnswer')} isPulsing />
                     ) : undefined
                   }
                   onClick={() => {
@@ -465,7 +491,17 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
 
           <VStack gap={2} width="100%">
             <Button
-              label={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              label={language === 'vi' ? 'English (Switch language)' : 'Tiếng Việt (Đổi ngôn ngữ)'}
+              variant="secondary"
+              width="100%"
+              icon={<Icon icon={Languages} size="sm" />}
+              onClick={() => {
+                toggleLanguage();
+                setIsMobileNavOpen(false);
+              }}
+            />
+            <Button
+              label={mode === 'dark' ? t('common.switchToLight') : t('common.switchToDark')}
               variant="secondary"
               width="100%"
               icon={<Icon icon={mode === 'dark' ? Sun : Moon} size="sm" />}
@@ -473,7 +509,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
             />
             {isLoggedIn ? (
               <Button
-                label="Sign Out"
+                label={t('common.signOut')}
                 variant="destructive"
                 width="100%"
                 icon={<Icon icon={LogOut} size="sm" />}
@@ -481,7 +517,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
               />
             ) : (
               <Button
-                label="Sign In"
+                label={t('common.signIn')}
                 variant="primary"
                 width="100%"
                 icon={<Icon icon={LogIn} size="sm" />}
