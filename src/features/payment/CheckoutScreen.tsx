@@ -3,33 +3,33 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   QrCode,
-  CreditCard,
   ShieldCheck,
   Lock,
   Gem,
   AlertCircle,
-  Sword,
+  Swords,
   Shield,
-  Users,
+  Sparkles,
 } from 'lucide-react';
-import { Avatar, AvatarStatusDot } from '@astryxdesign/core/Avatar';
-import { Badge } from '@astryxdesign/core/Badge';
+import { Avatar } from '@astryxdesign/core/Avatar';
 import { Banner } from '@astryxdesign/core/Banner';
 import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
+import { Center } from '@astryxdesign/core/Center';
 import { Divider } from '@astryxdesign/core/Divider';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
+import { Grid } from '@astryxdesign/core/Grid';
 import { Heading } from '@astryxdesign/core/Heading';
+import { Icon } from '@astryxdesign/core/Icon';
 import { HStack, VStack } from '@astryxdesign/core/Layout';
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
-import { RadioList, RadioListItem } from '@astryxdesign/core/RadioList';
+import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Text } from '@astryxdesign/core/Text';
 import { Token } from '@astryxdesign/core/Token';
 import { LayoutWrapper } from '../../components/LayoutWrapper/LayoutWrapper';
 import { GemArt } from '../../components/GameIcons/GemArt';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../core/network/apiClient';
-import styles from './CheckoutScreen.module.css';
 
 interface Pack {
   id: string;
@@ -50,50 +50,47 @@ interface Pack {
 export const CheckoutScreen: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const pack = location.state?.pack as Pack | undefined;
+  const pack = (location.state as { pack?: Pack } | null)?.pack;
 
   const { username, playerId } = useAuthStore();
-  const [selectedChannel, setSelectedChannel] = useState('vietqr');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const formatPrice = (price: number) => `${price.toLocaleString('vi-VN')} VND`;
 
   if (!pack) {
     return (
       <LayoutWrapper>
-        <div className={styles.emptyWrap}>
-          <Card variant="default" padding={6} maxWidth={480} width="100%">
-            <EmptyState
-              icon={<AlertCircle size={40} />}
-              title="No Package Selected"
-              description="Please select a Gem tier or Bundle from the Treasury catalog."
-              actions={
-                <Button
-                  label="Return to Treasury"
-                  variant="primary"
-                  onClick={() => navigate('/profile/topup')}
-                />
-              }
-            />
-          </Card>
-        </div>
+        <Center minHeight="60vh">
+          <EmptyState
+            icon={<Icon icon={AlertCircle} size="lg" color="warning" />}
+            title="No Package Selected"
+            description="Please select a Gem tier or Bundle from the Treasury catalog before proceeding to checkout."
+            actions={
+              <Button
+                variant="primary"
+                label="Return to Treasury"
+                onClick={() => navigate('/profile/topup')}
+              />
+            }
+          />
+        </Center>
       </LayoutWrapper>
     );
   }
 
+  const formatPrice = (price: number) => `${price.toLocaleString('vi-VN')} VND`;
+
   const unitList = pack.unitNames || pack.resolvedUnitNames || [];
   const weaponList = pack.weaponNames || pack.resolvedWeaponNames || [];
   const trinketList = pack.trinketNames || pack.resolvedTrinketNames || [];
-  const bonusCount = unitList.length + weaponList.length + trinketList.length;
-  const hasInclusions = bonusCount > 0;
+  const totalInclusions = unitList.length + weaponList.length + trinketList.length;
+  const hasInclusions = totalInclusions > 0;
 
   const handlePay = async () => {
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
-      const response = await apiClient.post<{ checkoutUrl?: string }>('/api/payment/create-order', {
+      const response = await apiClient.post('/api/payment/create-order', {
         packId: pack.id,
         returnUrl: `${window.location.origin}/payment/success`,
         cancelUrl: `${window.location.origin}/payment/cancel`,
@@ -108,121 +105,117 @@ export const CheckoutScreen: React.FC = () => {
         setIsLoading(false);
       }
     } catch (error: unknown) {
+      const axiosErr = error as { response?: { data?: { message?: string } } };
       console.error('Checkout error:', error);
-      const apiMsg = (error as { response?: { data?: { message?: string } } })?.response?.data
-        ?.message;
-      setErrorMessage(apiMsg || 'Error occurred while creating payment order.');
+      setErrorMessage(
+        axiosErr?.response?.data?.message || 'Error occurred while creating payment order.'
+      );
       setIsLoading(false);
     }
   };
 
   return (
     <LayoutWrapper>
-      <VStack gap={4} width="100%">
-        {/* Top Return & Security Row */}
-        <HStack hAlign="between" vAlign="center" gap={3} wrap="wrap">
+      <VStack gap={5} width="100%">
+        <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3} width="100%">
           <Button
-            label="Return to Treasury"
             variant="ghost"
             size="sm"
-            icon={<ArrowLeft size={16} />}
+            icon={<Icon icon={ArrowLeft} size="sm" />}
+            label="Return to Treasury"
             onClick={() => navigate(-1)}
           />
-          <Badge variant="success" icon={<Lock size={12} />} label="Secure 256-Bit SSL Checkout" />
+          <HStack gap={2} vAlign="center">
+            <Icon icon={Lock} size="xsm" color="secondary" />
+            <Text type="supporting" size="sm" color="secondary">
+              Secure 256-Bit SSL Checkout
+            </Text>
+          </HStack>
         </HStack>
 
-        {/* Character Destination Card (Real Data) */}
-        <Card variant="default" padding={4} width="100%">
-          <HStack hAlign="between" vAlign="center" gap={3} wrap="wrap">
+        <Card padding={4} elevation="low">
+          <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3} width="100%">
             <HStack gap={3} vAlign="center">
               <Avatar
-                size={40}
-                name={username || 'Player'}
                 src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${username || 'Player'}`}
-                status={<AvatarStatusDot variant="success" label="Delivery destination confirmed" />}
+                name={username || 'Player'}
+                size="md"
               />
-              <VStack gap={0.5}>
+              <VStack gap={1}>
                 <HStack gap={2} vAlign="center" wrap="wrap">
-                  <Heading level={4}>{username || 'Player'}</Heading>
-                  <Badge variant="cyan" label="Pactkeeper Official Server" />
+                  <Text weight="semibold">{username || 'Player'}</Text>
+                  <Token label="Pactkeeper Official Server" size="sm" />
                 </HStack>
-                <Text type="code" size="xsm" color="secondary">
+                <Text type="supporting" size="sm" color="secondary">
                   Target Player ID: {playerId || 'Current Account'}
                 </Text>
               </VStack>
             </HStack>
 
-            <Badge
-              variant="success"
-              icon={<ShieldCheck size={13} />}
-              label="Delivery Destination Confirmed"
-            />
+            <HStack gap={2} vAlign="center">
+              <StatusDot variant="success" label="Delivery destination confirmed" />
+              <Text size="sm" weight="medium">
+                Delivery Destination Confirmed
+              </Text>
+            </HStack>
           </HStack>
         </Card>
 
-        {/* 2-Column Checkout Layout */}
-        <div className={styles.checkoutGrid}>
-          {/* Left Column */}
-          <VStack gap={4}>
-            {/* 1. Order Item Details */}
-            <Card variant="default" padding={5} width="100%">
-              <VStack gap={4}>
+        <Grid columns={{ minWidth: 320, max: 2, repeat: 'fit' }} gap={5} width="100%">
+          <VStack gap={5} width="100%">
+            <Card padding={5} elevation="low">
+              <VStack gap={4} width="100%">
                 <HStack gap={2} vAlign="center">
-                  <Badge variant="yellow" label="1" />
+                  <Token label="Step 1" size="sm" />
                   <Heading level={3}>Order Item Details</Heading>
                 </HStack>
 
                 <Divider />
 
-                <HStack gap={4} vAlign="center" wrap="wrap">
-                  <div className={styles.itemArtWrap} aria-hidden="true">
-                    <GemArt gemsAmount={pack.gemsAmount} size={80} />
-                  </div>
+                <HStack gap={5} vAlign="center" wrap="wrap">
+                  <GemArt gemsAmount={pack.gemsAmount} size={64} />
 
-                  <VStack gap={2} className={styles.itemDetailsCol}>
-                    <Heading level={3}>{pack.name}</Heading>
-                    <div>
-                      <Badge
-                        variant="cyan"
-                        icon={<Gem size={13} />}
-                        label={`${pack.gemsAmount.toLocaleString('en-US')} Gems`}
-                      />
-                    </div>
+                  <VStack gap={2}>
+                    <Heading level={4}>{pack.name}</Heading>
+
+                    <HStack gap={2} vAlign="center">
+                      <Icon icon={Gem} size="sm" color="cyan" />
+                      <Text weight="semibold" size="lg" hasTabularNumbers>
+                        {pack.gemsAmount.toLocaleString('en-US')} Gems
+                      </Text>
+                    </HStack>
 
                     {hasInclusions && (
-                      <VStack gap={1.5}>
-                        <Text type="supporting" size="xsm" color="secondary">
-                          Included In Package
+                      <VStack gap={2}>
+                        <Text type="supporting" size="sm" color="secondary">
+                          Included in package:
                         </Text>
-                        <div className={styles.inclusionsWrap}>
+                        <HStack gap={1.5} wrap="wrap">
                           {unitList.map((n, i) => (
                             <Token
                               key={`u-${i}`}
+                              icon={<Icon icon={Swords} size="xsm" />}
                               label={`Hero: ${n}`}
                               size="sm"
-                              color="blue"
-                              icon={<Users size={12} />}
                             />
                           ))}
                           {weaponList.map((n, i) => (
                             <Token
                               key={`w-${i}`}
+                              icon={<Icon icon={Shield} size="xsm" />}
                               label={`Weapon: ${n}`}
                               size="sm"
-                              color="cyan"
-                              icon={<Sword size={12} />}
                             />
                           ))}
                           {trinketList.map((n, i) => (
                             <Token
                               key={`t-${i}`}
+                              icon={<Icon icon={Sparkles} size="xsm" />}
                               label={`Trinket: ${n}`}
                               size="sm"
-                              color="yellow"
-                              icon={<Shield size={12} />}
                             />
                           ))}
-                        </div>
+                        </HStack>
                       </VStack>
                     )}
                   </VStack>
@@ -230,115 +223,98 @@ export const CheckoutScreen: React.FC = () => {
               </VStack>
             </Card>
 
-            {/* 2. Payment Gateway Selection (Unified PayOS Gateway) */}
-            <Card variant="default" padding={5} width="100%">
-              <VStack gap={4}>
+            <Card padding={5} elevation="low">
+              <VStack gap={4} width="100%">
                 <HStack gap={2} vAlign="center">
-                  <Badge variant="yellow" label="2" />
-                  <Heading level={3}>Payment Gateway (PayOS)</Heading>
+                  <Token label="Step 2" size="sm" />
+                  <Heading level={3}>Payment Gateway</Heading>
                 </HStack>
+
+                <Divider />
 
                 <Banner
                   status="info"
-                  title="Official Hosted PayOS Checkout"
-                  description="All channels proceed through the official PayOS gateway page supporting VietQR, Napas 247, and domestic bank transfers with zero fee."
+                  title="PayOS Hosted Checkout (VietQR / Napas 247)"
+                  description="Proceeding creates a live PayOS order with a 15-minute VietQR code. Scan with any Vietnamese banking app for 0 VND fee and instant in-game credit."
                 />
 
-                <RadioList
-                  label="Select preferred PayOS payment channel"
-                  isLabelHidden
-                  value={selectedChannel}
-                  onChange={setSelectedChannel}
-                  width="100%"
-                >
-                  <RadioListItem
-                    value="vietqr"
-                    startContent={<QrCode size={18} />}
-                    label={
-                      <HStack gap={2} vAlign="center" wrap="wrap">
-                        <span>VietQR / Napas 247 Banking Apps</span>
-                        <Badge variant="success" label="RECOMMENDED · 0% FEE" />
-                      </HStack>
-                    }
-                    aria-label="VietQR / Napas 247 Banking Apps Recommended 0% Fee"
-                    description="Scan dynamic QR with any banking app on the PayOS checkout page for instant confirmation."
-                  />
-                  <RadioListItem
-                    value="card"
-                    startContent={<CreditCard size={18} />}
-                    label="Domestic Napas Bank Transfer / Gateway Cards"
-                    description="Complete payment via supported banking channels listed directly on PayOS."
-                  />
-                </RadioList>
+                <MetadataList>
+                  <MetadataListItem label="Provider" icon={<Icon icon={QrCode} size="xsm" />}>
+                    PayOS Official Gateway
+                  </MetadataListItem>
+                  <MetadataListItem label="Supported Channels">
+                    <HStack gap={1.5} wrap="wrap">
+                      <Token label="VietQR" size="sm" />
+                      <Token label="Napas 247" size="sm" />
+                      <Token label="Banking Apps" size="sm" />
+                    </HStack>
+                  </MetadataListItem>
+                  <MetadataListItem label="Gateway Fee">0 VND (Free)</MetadataListItem>
+                </MetadataList>
               </VStack>
             </Card>
           </VStack>
 
-          {/* Right Column: Payment Summary */}
-          <div className={styles.rightCol}>
-            <Card variant="default" elevation="med" padding={5} width="100%">
-              <VStack gap={4}>
-                <Heading level={3}>Payment Summary</Heading>
-                <Divider />
+          <Card padding={5} elevation="med">
+            <VStack gap={4} width="100%">
+              <Heading level={3}>Payment Summary</Heading>
 
-                <MetadataList columns="single" label={{ position: 'start', width: 120 }}>
-                  <MetadataListItem label="Package">
-                    <Text weight="semibold">{pack.name}</Text>
-                  </MetadataListItem>
-                  <MetadataListItem label="Gems Granted">
-                    <Text hasTabularNumbers weight="semibold" className={styles.cyanText}>
-                      {pack.gemsAmount.toLocaleString('en-US')} Gems
-                    </Text>
-                  </MetadataListItem>
-                  {hasInclusions && (
-                    <MetadataListItem label="Bonus Items">
-                      <Badge variant="green" label={`${bonusCount} Items Included`} />
-                    </MetadataListItem>
-                  )}
-                  <MetadataListItem label="Gateway Fee">
-                    <Badge variant="success" label="0 VND (Free)" />
-                  </MetadataListItem>
-                </MetadataList>
+              <Divider />
 
-                <Divider />
-
-                <HStack hAlign="between" vAlign="center" width="100%">
-                  <Text type="label" color="secondary">
-                    Total Price
+              <MetadataList>
+                <MetadataListItem label="Package">{pack.name}</MetadataListItem>
+                <MetadataListItem label="Gems Granted">
+                  <Text hasTabularNumbers>
+                    {pack.gemsAmount.toLocaleString('en-US')} Gems
                   </Text>
-                  <Heading level={2} type="display-3" className={styles.totalValue}>
-                    {formatPrice(pack.priceVnd)}
-                  </Heading>
-                </HStack>
-
-                {errorMessage && (
-                  <Banner status="error" title="Order Error" description={errorMessage} role="alert" />
+                </MetadataListItem>
+                {hasInclusions && (
+                  <MetadataListItem label="Bonus Items">
+                    {totalInclusions} {totalInclusions === 1 ? 'Item' : 'Items'} Included
+                  </MetadataListItem>
                 )}
+                <MetadataListItem label="Gateway Fee">0 VND (Free)</MetadataListItem>
+              </MetadataList>
 
-                <Button
-                  label={`Proceed to Pay (${formatPrice(pack.priceVnd)})`}
-                  variant="primary"
-                  size="lg"
-                  width="100%"
-                  isLoading={isLoading}
-                  onClick={handlePay}
-                />
+              <Divider />
 
-                <Banner
-                  status="success"
-                  title="Instant Automatic Delivery"
-                  description="In-game currency and items are credited automatically to your account upon PayOS webhook confirmation."
-                  icon={<ShieldCheck size={16} />}
-                />
-
-                <Text type="supporting" size="xsm" color="secondary" justify="center" display="block">
-                  By proceeding, you agree to the Pactkeeper Payment Terms & Conditions. All orders
-                  deliver directly into your verified Player ID.
+              <HStack hAlign="between" vAlign="center" width="100%">
+                <Text weight="medium" color="secondary">
+                  Total Price
                 </Text>
-              </VStack>
-            </Card>
-          </div>
-        </div>
+                <Heading level={3}>{formatPrice(pack.priceVnd)}</Heading>
+              </HStack>
+
+              {errorMessage && (
+                <Banner status="error" title="Checkout Error" description={errorMessage} />
+              )}
+
+              <Button
+                variant="primary"
+                size="lg"
+                width="100%"
+                label={`Proceed to Pay (${formatPrice(pack.priceVnd)})`}
+                onClick={handlePay}
+                isLoading={isLoading}
+                isDisabled={isLoading}
+              />
+
+              <HStack gap={2} vAlign="start">
+                <Icon icon={ShieldCheck} size="sm" color="success" />
+                <Text type="supporting" size="sm" color="secondary">
+                  100% Instant Delivery via PayOS. In-game currency and items are automatically
+                  credited to your player account upon transaction confirmation.
+                </Text>
+              </HStack>
+
+              <Text type="supporting" size="2xs" color="secondary">
+                By clicking &ldquo;Proceed to Pay&rdquo;, you agree to the Pactkeeper Payment
+                Terms &amp; Conditions. All sales are processed directly into the designated player
+                account.
+              </Text>
+            </VStack>
+          </Card>
+        </Grid>
       </VStack>
     </LayoutWrapper>
   );

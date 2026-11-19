@@ -11,9 +11,9 @@ import {
 } from '@astryxdesign/core/Layout';
 import { Banner } from '@astryxdesign/core/Banner';
 import { Button } from '@astryxdesign/core/Button';
+import { Icon } from '@astryxdesign/core/Icon';
 import { Text } from '@astryxdesign/core/Text';
 import { useAuthStore } from '../../store/authStore';
-import styles from './AuthPromptModal.module.css';
 
 export const AuthPromptModal: React.FC = () => {
   const { authPrompt, closeAuthPrompt, setPendingRedirect } = useAuthStore();
@@ -46,11 +46,7 @@ export const AuthPromptModal: React.FC = () => {
           <DialogHeader
             title={authPrompt?.title || 'Sign In Required'}
             subtitle="Guest preview restriction"
-            startContent={
-              <span className={styles.iconRing} aria-hidden="true">
-                <Lock size={18} />
-              </span>
-            }
+            startContent={<Icon icon={Lock} color="accent" size="md" />}
             onOpenChange={(open) => {
               if (!open) {
                 closeAuthPrompt();
@@ -69,7 +65,7 @@ export const AuthPromptModal: React.FC = () => {
                 status="info"
                 title="Verified Player Access"
                 description="Sign in with your Game Account or Google to verify your Player ID and sync purchases in real time."
-                icon={<ShieldCheck size={16} />}
+                icon={<Icon icon={ShieldCheck} size="sm" />}
               />
             </VStack>
           </LayoutContent>
@@ -77,15 +73,11 @@ export const AuthPromptModal: React.FC = () => {
         footer={
           <LayoutFooter hasDivider>
             <HStack gap={2} hAlign="end" wrap="wrap" width="100%">
-              <Button
-                label="Continue Browsing"
-                variant="secondary"
-                onClick={closeAuthPrompt}
-              />
+              <Button label="Continue Browsing" variant="secondary" onClick={closeAuthPrompt} />
               <Button
                 label="Sign In Now"
                 variant="primary"
-                icon={<LogIn size={16} />}
+                icon={<Icon icon={LogIn} size="sm" />}
                 onClick={handleConfirmLogin}
               />
             </HStack>

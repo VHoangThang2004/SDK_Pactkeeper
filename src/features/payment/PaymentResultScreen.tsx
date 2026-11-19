@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, ScrollText, Gem, ShieldCheck } from 'lucide-react';
-import { Badge } from '@astryxdesign/core/Badge';
+import { CheckCircle2, XCircle, ScrollText, Gem, ShieldCheck } from 'lucide-react';
 import { Banner } from '@astryxdesign/core/Banner';
 import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
+import { Center } from '@astryxdesign/core/Center';
+import { Divider } from '@astryxdesign/core/Divider';
 import { Heading } from '@astryxdesign/core/Heading';
+import { Icon } from '@astryxdesign/core/Icon';
 import { HStack, VStack } from '@astryxdesign/core/Layout';
+import { Link } from '@astryxdesign/core/Link';
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { Spinner } from '@astryxdesign/core/Spinner';
+import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Text } from '@astryxdesign/core/Text';
 import { LayoutWrapper } from '../../components/LayoutWrapper/LayoutWrapper';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../core/network/apiClient';
-import styles from './PaymentResultScreen.module.css';
 
 export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSuccess }) => {
   const location = useLocation();
@@ -46,25 +49,21 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
 
   return (
     <LayoutWrapper>
-      <div className={styles.pageCenter}>
-        <Card
-          variant="default"
-          elevation="med"
-          padding={6}
-          maxWidth={560}
-          width="100%"
-          className={isSuccess ? styles.cardSuccess : styles.cardFailed}
-        >
-          <VStack gap={4} hAlign="center" width="100%">
-            <div className={isSuccess ? styles.auraSuccess : styles.auraFailed} aria-hidden="true">
-              {isSuccess ? <CheckCircle size={48} /> : <XCircle size={48} />}
-            </div>
+      <Center minHeight="65vh">
+        <Card elevation="med" padding={6} maxWidth={560} width="100%">
+          <VStack gap={5} width="100%">
+            <VStack gap={3} hAlign="center" width="100%">
+              <Icon
+                icon={isSuccess ? CheckCircle2 : XCircle}
+                size="lg"
+                color={isSuccess ? 'success' : 'error'}
+              />
 
-            <VStack gap={1.5} hAlign="center">
-              <Heading level={1} justify="center">
+              <Heading level={2} justify="center">
                 {isSuccess ? 'Payment Successful!' : 'Payment Cancelled'}
               </Heading>
-              <Text type="body" color="secondary" justify="center" display="block">
+
+              <Text type="supporting" color="secondary" justify="center" display="block">
                 {isSuccess
                   ? 'Your tribute has been acknowledged. In-game currency and rewards have been delivered directly to your account.'
                   : 'The payment process was cancelled or timed out. No currency was deducted.'}
@@ -74,75 +73,88 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
             {isSyncing && (
               <Banner
                 status="info"
-                icon={<Spinner size="sm" aria-label="Syncing order" />}
-                title="Syncing with Game Server & PayOS"
-                description="Reconciling transaction state and refreshing inventory..."
-              />
+                title="Reconciling Order"
+                description="Syncing transaction status with Game Server and PayOS..."
+                collapsible={false}
+              >
+                <HStack gap={2} vAlign="center">
+                  <Spinner size="sm" />
+                  <Text type="supporting" size="sm">
+                    Please wait a moment
+                  </Text>
+                </HStack>
+              </Banner>
             )}
 
-            <Card variant="muted" padding={4} width="100%">
-              <MetadataList columns="single" label={{ position: 'start', width: 150 }}>
-                <MetadataListItem label="Transaction Status">
-                  <Badge
+            <Divider />
+
+            <MetadataList>
+              <MetadataListItem label="Transaction Status">
+                <HStack gap={2} vAlign="center">
+                  <StatusDot
                     variant={isSuccess ? 'success' : 'error'}
-                    label={isSuccess ? 'CONFIRMED / PAID' : 'CANCELLED'}
+                    label={isSuccess ? 'Payment confirmed' : 'Payment cancelled'}
                   />
-                </MetadataListItem>
-                {orderCode && (
-                  <MetadataListItem label="Order Code">
-                    <Text type="code" weight="semibold">
-                      {orderCode}
-                    </Text>
-                  </MetadataListItem>
-                )}
-                <MetadataListItem label="Target Character">
-                  <Text weight="semibold">{username || 'Player'}</Text>
-                </MetadataListItem>
-                <MetadataListItem label="Player ID">
-                  <Text type="code" size="sm">
-                    {playerId || 'Current Account'}
+                  <Text weight="semibold">
+                    {isSuccess ? 'CONFIRMED / PAID' : 'CANCELLED'}
+                  </Text>
+                </HStack>
+              </MetadataListItem>
+
+              {orderCode && (
+                <MetadataListItem label="Order Code">
+                  <Text type="code" hasTabularNumbers>
+                    TXN-{orderCode}
                   </Text>
                 </MetadataListItem>
-                <MetadataListItem label="Delivery Channel">
-                  <HStack gap={1.5} vAlign="center">
-                    <ShieldCheck size={14} className={styles.deliverIcon} aria-hidden="true" />
-                    <Text weight="medium">In-Game Mailbox & Inventory</Text>
-                  </HStack>
-                </MetadataListItem>
-              </MetadataList>
-            </Card>
+              )}
 
-            <HStack gap={3} hAlign="center" wrap="wrap" width="100%">
+              <MetadataListItem label="Player Name">
+                {username || 'Player'}
+              </MetadataListItem>
+
+              <MetadataListItem label="Player ID">
+                <Text type="code">{playerId || 'Current Account'}</Text>
+              </MetadataListItem>
+
+              <MetadataListItem
+                label="Delivery Channel"
+                icon={<Icon icon={ShieldCheck} size="xsm" color="success" />}
+              >
+                In-Game Mailbox &amp; Inventory
+              </MetadataListItem>
+            </MetadataList>
+
+            <Divider />
+
+            <VStack gap={2} width="100%">
               <Button
-                label="Return to Treasury"
                 variant="primary"
                 size="lg"
-                icon={<Gem size={17} />}
+                width="100%"
+                icon={<Icon icon={Gem} size="sm" />}
+                label="Return to Treasury"
                 onClick={() => navigate('/profile/topup')}
               />
               <Button
-                label="View Ledger History"
                 variant="secondary"
-                size="lg"
-                icon={<ScrollText size={17} />}
+                size="md"
+                width="100%"
+                icon={<Icon icon={ScrollText} size="sm" />}
+                label="View Ledger History"
                 onClick={() => navigate('/profile/history')}
               />
-            </HStack>
+            </VStack>
 
-            <HStack gap={1} vAlign="center" hAlign="center" wrap="wrap">
+            <Center>
               <Text type="supporting" size="sm" color="secondary">
-                Have questions regarding your order?
+                Have questions regarding your order?{' '}
+                <Link href="/profile/support">Contact Counsel Support</Link>
               </Text>
-              <Button
-                label="Contact Counsel Support"
-                variant="ghost"
-                size="sm"
-                href="/profile/support"
-              />
-            </HStack>
+            </Center>
           </VStack>
         </Card>
-      </div>
+      </Center>
     </LayoutWrapper>
   );
 };

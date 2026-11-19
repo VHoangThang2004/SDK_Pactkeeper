@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  ShieldCheck,
   Gem,
   Coins,
   Sparkles,
@@ -18,25 +17,27 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarStatusDot } from '@astryxdesign/core/Avatar';
-import { Badge, type BadgeVariant } from '@astryxdesign/core/Badge';
+import { Badge } from '@astryxdesign/core/Badge';
 import { Banner } from '@astryxdesign/core/Banner';
 import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
-import { ClickableCard } from '@astryxdesign/core/ClickableCard';
+import { Center } from '@astryxdesign/core/Center';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Heading } from '@astryxdesign/core/Heading';
+import { Icon } from '@astryxdesign/core/Icon';
 import { HStack, VStack } from '@astryxdesign/core/Layout';
 import { ProgressBar } from '@astryxdesign/core/ProgressBar';
+import { Section } from '@astryxdesign/core/Section';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
+import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
 import { Text } from '@astryxdesign/core/Text';
-import { Token } from '@astryxdesign/core/Token';
+import { Token, type TokenColor } from '@astryxdesign/core/Token';
 import { useAuthStore } from '../../store/authStore';
 import { useSyncStore } from '../../store/syncStore';
 import { GemArt } from '../../components/GameIcons/GemArt';
 import { apiClient } from '../../core/network/apiClient';
-import styles from './TopUpScreen.module.css';
 
 interface PlayerProfile {
   id?: string;
@@ -90,14 +91,14 @@ const hasVisibleInclusionNames = (pack: TopUpPack): boolean =>
       (pack.unitNames && pack.unitNames.length > 0)
   );
 
-const getPackBadge = (pack: TopUpPack): { label: string; variant: BadgeVariant } => {
+const getPackTierToken = (pack: TopUpPack): { label: string; color: TokenColor } => {
   if (hasPackInclusions(pack)) {
-    return { label: 'BUNDLE INCLUDED', variant: 'green' };
+    return { label: 'Bundle Included', color: 'green' };
   }
   if (pack.gemsAmount >= 1000) {
-    return { label: 'HIGH TIER', variant: 'yellow' };
+    return { label: 'High Tier', color: 'yellow' };
   }
-  return { label: 'OFFICIAL PACK', variant: 'neutral' };
+  return { label: 'Official Pack', color: 'gray' };
 };
 
 export const TopUpScreen: React.FC = () => {
@@ -116,479 +117,480 @@ export const TopUpScreen: React.FC = () => {
   });
 
   const [packs, setPacks] = useState<TopUpPack[]>([]);
-  const [activeBanner, setActiveBanner] = useState<GachaBanner | null>(null);
+  const [banner, setBanner] = useState<GachaBanner | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'gems' | 'bundles'>('all');
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    setLoadError(null);
-    try {
-      const [profileResult, packsResult, bannerResult] = await Promise.allSettled([
-        isLoggedIn ? apiClient.get<PlayerProfile>('/api/PlayerProfile') : Promise.resolve(null),
-        apiClient.get<TopUpPack[]>('/api/topuppack'),
-        apiClient.get<GachaBanner[]>('/api/gachabanner/active'),
-      ]);
-
-      // 1. Profile Data from Backend (Authenticated Players only)
-      if (isLoggedIn && profileResult.status === 'fulfilled' && profileResult.value?.data) {
-        const raw = profileResult.value.data;
-        setProfile({
-          id: raw.id,
-          playerId: raw.playerId || playerId || '',
-          username: raw.username || username || 'Player',
-          level: raw.level ?? 1,
-          experience: raw.experience ?? 0,
-          gems: raw.gems ?? 0,
-          gold: raw.gold ?? 0,
-          rating: raw.rating ?? 0,
-          rankTier: raw.rankTier ?? 0,
-          rankWins: raw.rankWins ?? 0,
-          rankLosses: raw.rankLosses ?? 0,
-        });
-      }
-
-      // 2. Real Packs Data from Backend
-      if (packsResult.status === 'fulfilled' && packsResult.value?.data) {
-        const fetchedPacks = packsResult.value.data.filter((p) => p.isAvailable !== false);
-        setPacks(fetchedPacks);
-      } else if (packsResult.status === 'rejected') {
-        const status = (packsResult.reason as { response?: { status?: number } })?.response?.status;
-        setLoadError(
-          status === 401
-            ? 'Public Top-Up price list is temporarily unavailable without sign-in. Please sign in or ensure the Backend server has restarted with public catalog access.'
-            : 'Unable to load Top-Up packages from the server. Please check your connection and retry.'
-        );
-      }
-
-      // 3. Real Active Gacha / Event Banner from Backend
-      if (
-        bannerResult.status === 'fulfilled' &&
-        bannerResult.value?.data &&
-        bannerResult.value.data.length > 0
-      ) {
-        setActiveBanner(bannerResult.value.data[0]);
-      }
-    } catch (err) {
-      console.error('Error fetching backend data in TopUpScreen:', err);
-      setLoadError('Unexpected error while fetching catalog data.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoggedIn, username, playerId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Real-time synchronization when payment is completed or profile update event received
   const { profileUpdateTimestamp } = useSyncStore();
 
-  const syncProfileOnly = useCallback(async () => {
-    if (!isLoggedIn) return;
-    try {
-      const res = await apiClient.get<PlayerProfile>('/api/PlayerProfile');
-      if (res.data) {
-        const raw = res.data;
-        setProfile((prev) => ({
-          ...prev,
-          gems: raw.gems ?? prev.gems,
-          gold: raw.gold ?? prev.gold,
-          level: raw.level ?? prev.level,
-          experience: raw.experience ?? prev.experience,
-        }));
+  const fetchBackendData = useCallback(
+    async (isInitial = false) => {
+      if (isInitial) {
+        setIsLoading(true);
+        setLoadError(null);
       }
-    } catch {
-      // ignore transient focus refresh errors
+
+      try {
+        if (isLoggedIn) {
+          const [profRes, packRes] = await Promise.all([
+            apiClient.get<PlayerProfile>('/api/playerprofile'),
+            apiClient.get<TopUpPack[]>('/api/topuppack'),
+          ]);
+
+          if (profRes.data) {
+            setProfile(profRes.data);
+          }
+
+          if (packRes.data && Array.isArray(packRes.data)) {
+            const validPacks = packRes.data.filter((p) => p.isAvailable !== false);
+            validPacks.sort((a, b) => a.priceVnd - b.priceVnd);
+            setPacks(validPacks);
+          }
+        } else {
+          const packRes = await apiClient.get<TopUpPack[]>('/api/topuppack');
+          if (packRes.data && Array.isArray(packRes.data)) {
+            const validPacks = packRes.data.filter((p) => p.isAvailable !== false);
+            validPacks.sort((a, b) => a.priceVnd - b.priceVnd);
+            setPacks(validPacks);
+          }
+        }
+
+        try {
+          const bannerRes = await apiClient.get<GachaBanner>('/api/gachabanner/active');
+          if (bannerRes.data && bannerRes.data.isActive) {
+            setBanner(bannerRes.data);
+          }
+        } catch {
+          // Optional banner endpoint
+        }
+      } catch (err: unknown) {
+        console.error('Error fetching real backend data:', err);
+        if (isInitial) {
+          setLoadError(
+            'Could not connect to Backend API (http://localhost:5276). Please ensure the server is running.'
+          );
+        }
+      } finally {
+        if (isInitial) setIsLoading(false);
+      }
+    },
+    [isLoggedIn]
+  );
+
+  useEffect(() => {
+    fetchBackendData(true);
+  }, [fetchBackendData]);
+
+  useEffect(() => {
+    if (isLoggedIn && profileUpdateTimestamp > 0) {
+      fetchBackendData(false);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, profileUpdateTimestamp, fetchBackendData]);
 
   useEffect(() => {
-    syncProfileOnly();
-  }, [profileUpdateTimestamp, syncProfileOnly]);
-
-  useEffect(() => {
-    const handleFocus = () => syncProfileOnly();
+    const handleFocus = () => fetchBackendData(false);
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [syncProfileOnly]);
+  }, [fetchBackendData]);
 
-  const handleSelectPack = (pkg: TopUpPack) => {
+  const handleSelectPack = (pack: TopUpPack) => {
+    const checkoutPack = {
+      ...pack,
+      resolvedUnitNames: pack.unitNames || [],
+      resolvedWeaponNames: pack.weaponNames || [],
+      resolvedTrinketNames: pack.trinketNames || [],
+    };
+
     if (!isLoggedIn) {
       openAuthPrompt({
-        title: `Sign In to Purchase ${pkg.name}`,
-        message: `Sign in to buy ${pkg.name} (${pkg.gemsAmount.toLocaleString('en-US')} Gems — ${pkg.priceVnd.toLocaleString('vi-VN')} VND) and deliver rewards directly to your Player ID.`,
-        redirectTo: { path: '/checkout', state: { pack: pkg } },
+        title: `Sign In to Purchase ${pack.name}`,
+        message: `You are browsing the official Top-Up price list as a Guest. Please sign in to your Pactkeeper account to purchase "${
+          pack.name
+        }" (${pack.priceVnd.toLocaleString('vi-VN')} VND) and deliver ${pack.gemsAmount.toLocaleString(
+          'en-US'
+        )} Gems to your character.`,
+        redirectTo: {
+          path: '/checkout',
+          state: { pack: checkoutPack },
+        },
       });
       return;
     }
-    navigate('/checkout', { state: { pack: pkg } });
+
+    navigate('/checkout', {
+      state: { pack: checkoutPack },
+    });
   };
 
-  const handleGuestSignIn = () => {
-    setPendingRedirect(null);
+  const handleSignInFromGuest = () => {
+    setPendingRedirect({ path: '/profile/topup' });
     navigate('/login');
   };
 
-  const filteredPacks = packs.filter((pack) => {
-    const isBundle = hasPackInclusions(pack);
-    if (activeTab === 'bundles') return isBundle;
-    if (activeTab === 'gems') return !isBundle;
-    return true;
-  });
+  const pureGemPacksCount = useMemo(
+    () => packs.filter((p) => !hasPackInclusions(p)).length,
+    [packs]
+  );
+  const bundlePacksCount = useMemo(
+    () => packs.filter((p) => hasPackInclusions(p)).length,
+    [packs]
+  );
 
-  const featuredPack =
-    packs.length > 0
-      ? packs.reduce((max, p) => (p.gemsAmount > max.gemsAmount ? p : max), packs[0])
-      : null;
+  const filteredPacks = useMemo(
+    () =>
+      packs.filter((p) => {
+        const hasBundle = hasPackInclusions(p);
+        if (activeTab === 'gems') return !hasBundle;
+        if (activeTab === 'bundles') return hasBundle;
+        return true;
+      }),
+    [packs, activeTab]
+  );
 
-  if (isLoading) {
-    return (
-      <VStack gap={5} width="100%">
-        <Skeleton width="100%" height={180} radius={4} index={0} />
-        <Skeleton width="100%" height={92} radius={4} index={1} />
-        <Grid columns={{ minWidth: 245, max: 4, repeat: 'fit' }} gap={4} width="100%">
-          {[0, 1, 2, 3].map((idx) => (
-            <Skeleton key={idx} width="100%" height={340} radius={4} index={idx + 2} />
-          ))}
-        </Grid>
-      </VStack>
-    );
-  }
+  const xpPercent = Math.min(100, Math.max(0, profile.experience || 0));
 
   return (
     <VStack gap={5} width="100%">
-      {/* 1. Hero Event Banner (Driven by Real Backend Data) */}
-      {(activeBanner || featuredPack) && (
-        <Card variant="default" elevation="med" padding={6} className={styles.heroCard}>
-          <div className={styles.heroGlow} aria-hidden="true" />
-          <div className={styles.heroLayout}>
-            <VStack gap={3} className={styles.heroCopy}>
-              <div>
-                <Badge
-                  variant={activeBanner ? 'yellow' : 'cyan'}
-                  icon={<Sparkles size={13} />}
-                  label={activeBanner ? 'ACTIVE EVENT BANNER' : 'FEATURED REPLENISHMENT'}
-                />
-              </div>
-
-              <Heading level={1}>
-                {activeBanner ? activeBanner.name : featuredPack?.name}
-              </Heading>
-
-              <Text type="body" color="secondary" display="block">
-                {activeBanner
-                  ? activeBanner.description
-                  : `Direct in-game replenishment offering ${featuredPack?.gemsAmount.toLocaleString('en-US')} Gems for ${featuredPack?.priceVnd.toLocaleString('vi-VN')} VND.`}
-              </Text>
-
-              {featuredPack && (
-                <div>
-                  <Badge
-                    variant="cyan"
-                    icon={<Gem size={13} />}
-                    label={`Top Tier: ${featuredPack.name} (${featuredPack.gemsAmount.toLocaleString('en-US')} Gems)`}
-                  />
-                </div>
-              )}
-            </VStack>
-
-            <div className={styles.heroArt} aria-hidden="true">
-              <GemArt gemsAmount={featuredPack?.gemsAmount || 1000} size={136} />
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* 2. Character Verification & Guest Banner */}
-      {isLoggedIn ? (
-        <VStack gap={3} width="100%">
-          <Card variant="default" padding={5} width="100%">
-            <HStack hAlign="between" vAlign="center" gap={4} wrap="wrap">
-              <HStack gap={3} vAlign="center" wrap="wrap" className={styles.verifyIdentity}>
-                <Avatar
-                  size={48}
-                  name={profile.username}
-                  src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${profile.username}`}
-                  status={<AvatarStatusDot variant="success" label="Target Verified" />}
-                />
-                <VStack gap={1.5}>
-                  <HStack gap={2} vAlign="center" wrap="wrap">
-                    <Heading level={3}>{profile.username}</Heading>
-                    <Badge variant="yellow" label={`Lv.${profile.level}`} />
-                    <Badge variant="cyan" label="Pactkeeper Official" />
-                    <Badge
-                      variant="success"
-                      icon={<ShieldCheck size={12} />}
-                      label="Target Verified"
-                    />
-                  </HStack>
-
-                  <HStack gap={3} vAlign="center" wrap="wrap">
-                    <Text type="code" size="xsm" color="secondary">
-                      Player ID: {profile.playerId || playerId || 'N/A'}
-                    </Text>
-                    <HStack gap={2} vAlign="center">
-                      <Text type="supporting" size="xsm" color="secondary">
-                        XP {profile.experience}/100
-                      </Text>
-                      <div className={styles.xpBarWrap}>
-                        <ProgressBar
-                          value={profile.experience}
-                          max={100}
-                          label="Account experience progress"
-                          isLabelHidden
-                          variant="accent"
-                        />
-                      </div>
-                    </HStack>
-                    {profile.rating !== undefined && profile.rating > 0 && (
-                      <Badge
-                        variant="neutral"
-                        icon={<Trophy size={12} />}
-                        label={`Rating: ${profile.rating}`}
-                      />
-                    )}
-                  </HStack>
-                </VStack>
-              </HStack>
-
-              <HStack gap={3} wrap="wrap">
-                <Card variant="muted" padding={3} className={styles.balanceTile}>
-                  <VStack gap={0.5}>
-                    <Text type="supporting" size="xsm" color="secondary">
-                      CURRENT GEMS
-                    </Text>
-                    <HStack gap={1.5} vAlign="center">
-                      <Gem size={17} className={styles.gemIcon} aria-hidden="true" />
-                      <Text type="large" weight="bold" hasTabularNumbers>
-                        {profile.gems.toLocaleString('en-US')}
-                      </Text>
-                    </HStack>
-                  </VStack>
-                </Card>
-
-                <Card variant="muted" padding={3} className={styles.balanceTile}>
-                  <VStack gap={0.5}>
-                    <Text type="supporting" size="xsm" color="secondary">
-                      VAULT GOLD
-                    </Text>
-                    <HStack gap={1.5} vAlign="center">
-                      <Coins size={17} className={styles.goldIcon} aria-hidden="true" />
-                      <Text type="large" weight="bold" hasTabularNumbers>
-                        {profile.gold.toLocaleString('en-US')}
-                      </Text>
-                    </HStack>
-                  </VStack>
-                </Card>
-              </HStack>
-            </HStack>
-          </Card>
-
-          <Banner
-            status="info"
-            title={`Confirm Player ID: ${profile.playerId || playerId}`}
-            description="Purchases are credited directly via in-game inventory and mail upon PayOS verification."
-          />
-        </VStack>
-      ) : (
-        <VStack gap={3} width="100%">
-          <Card variant="default" padding={5} width="100%">
-            <HStack hAlign="between" vAlign="center" gap={4} wrap="wrap">
-              <HStack gap={3} vAlign="center" wrap="wrap">
-                <Avatar size={48} alt="Guest Explorer" />
-                <VStack gap={1}>
-                  <HStack gap={2} vAlign="center" wrap="wrap">
-                    <Heading level={3}>Guest Explorer</Heading>
-                    <Badge variant="neutral" label="Pactkeeper Official" />
-                    <Badge variant="yellow" icon={<Lock size={12} />} label="Guest Access" />
-                  </HStack>
-                  <Text type="supporting" size="sm" color="secondary">
-                    Sign in to verify your target Player ID and view your live Gems and Vault Gold
-                    balance.
-                  </Text>
-                </VStack>
-              </HStack>
-
-              <Button
-                label="Sign In to Top Up"
-                variant="primary"
-                size="md"
-                icon={<LogIn size={16} />}
-                onClick={handleGuestSignIn}
+      {/* Hero Banner + Account Status Card */}
+      <Section variant="muted" padding={5} width="100%">
+        <Grid columns={{ minWidth: 300, max: 2, repeat: 'fit' }} gap={5} width="100%">
+          <VStack gap={3} vAlign="center">
+            <HStack gap={2} vAlign="center" wrap="wrap">
+              <Token
+                color="yellow"
+                size="sm"
+                icon={<Icon icon={Sparkles} size="xsm" />}
+                label={banner ? 'Active Event Banner' : 'Official Top-Up Center'}
               />
+              <HStack gap={1.5} vAlign="center">
+                <StatusDot variant="success" label="PayOS Verified" />
+                <Text type="supporting" size="xsm" color="secondary">
+                  PayOS Direct Delivery
+                </Text>
+              </HStack>
             </HStack>
-          </Card>
 
-          <Banner
-            status="warning"
-            title="Browsing as Guest (View-Only Mode)"
-            description="All package prices are live from the catalog. Sign in is required before checkout or viewing Ledger, Missives, and Counsel."
-          />
-        </VStack>
+            <Heading level={1}>{banner ? banner.name : 'Pactkeeper Treasury'}</Heading>
+
+            <Text type="body" color="secondary" display="block">
+              {banner
+                ? banner.description
+                : 'Recharge Gems and claim exclusive Equipment & Hero Bundles directly delivered to your Pactkeeper character account.'}
+            </Text>
+          </VStack>
+
+          <Card variant="default" elevation="low" padding={5}>
+            {isLoggedIn ? (
+              <VStack gap={4} width="100%">
+                <HStack hAlign="between" vAlign="start" gap={3} wrap="wrap" width="100%">
+                  <HStack gap={3} vAlign="center">
+                    <Avatar
+                      size={48}
+                      name={profile.username || username || 'Hero'}
+                      src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${
+                        profile.username || username || 'Hero'
+                      }`}
+                      status={<AvatarStatusDot variant="success" label="Character active" />}
+                    />
+                    <VStack gap={1}>
+                      <HStack gap={2} vAlign="center" wrap="wrap">
+                        <Heading level={3}>{profile.username || username}</Heading>
+                        <Token color="yellow" size="sm" label={`Lv.${profile.level}`} />
+                      </HStack>
+                      <Text type="code" size="xsm" color="secondary">
+                        Player ID: {profile.playerId || playerId || 'N/A'}
+                      </Text>
+                      <HStack gap={2} vAlign="center">
+                        <Text type="supporting" size="xsm" color="secondary" hasTabularNumbers>
+                          XP {profile.experience}/100
+                        </Text>
+                        <ProgressBar
+                          label="Character experience"
+                          value={xpPercent}
+                          max={100}
+                        />
+                      </HStack>
+                    </VStack>
+                  </HStack>
+
+                  {profile.rating !== undefined && profile.rating > 0 && (
+                    <Token
+                      color="yellow"
+                      size="sm"
+                      icon={<Icon icon={Trophy} size="xsm" />}
+                      label={`Rating ${profile.rating}`}
+                    />
+                  )}
+                </HStack>
+
+                <Grid columns={2} gap={3} width="100%">
+                  <Card variant="muted" padding={3}>
+                    <HStack gap={2} vAlign="center">
+                      <Icon icon={Gem} size="md" color="cyan" />
+                      <VStack gap={0}>
+                        <Text type="supporting" size="xsm" color="secondary">
+                          Current Gems
+                        </Text>
+                        <Text type="label" size="base" weight="bold" hasTabularNumbers>
+                          {(profile.gems || 0).toLocaleString('en-US')}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                  </Card>
+
+                  <Card variant="muted" padding={3}>
+                    <HStack gap={2} vAlign="center">
+                      <Icon icon={Coins} size="md" color="yellow" />
+                      <VStack gap={0}>
+                        <Text type="supporting" size="xsm" color="secondary">
+                          Current Gold
+                        </Text>
+                        <Text type="label" size="base" weight="bold" hasTabularNumbers>
+                          {(profile.gold || 0).toLocaleString('en-US')}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                  </Card>
+                </Grid>
+              </VStack>
+            ) : (
+              <VStack gap={4} width="100%">
+                <HStack hAlign="between" vAlign="start" gap={3} wrap="wrap" width="100%">
+                  <HStack gap={3} vAlign="center">
+                    <Avatar size={48} name="Guest Explorer" />
+                    <VStack gap={1}>
+                      <HStack gap={2} vAlign="center" wrap="wrap">
+                        <Heading level={3}>Guest Explorer</Heading>
+                        <Token
+                          color="gray"
+                          size="sm"
+                          icon={<Icon icon={Lock} size="xsm" />}
+                          label="Preview Mode"
+                        />
+                      </HStack>
+                      <Text type="supporting" size="xsm" color="secondary">
+                        Public price catalog · Sign in required to purchase
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </HStack>
+
+                <Text type="supporting" size="sm" color="secondary" display="block">
+                  You can freely inspect all official Top-Up packages and bundle inclusions below.
+                  Sign in to link your Character UID and unlock instant PayOS checkout.
+                </Text>
+
+                <Button
+                  label="Sign In to Top Up"
+                  variant="primary"
+                  width="100%"
+                  icon={<Icon icon={LogIn} size="sm" />}
+                  onClick={handleSignInFromGuest}
+                />
+              </VStack>
+            )}
+          </Card>
+        </Grid>
+      </Section>
+
+      {/* Account / Guest Verification Notice */}
+      {isLoggedIn ? (
+        <Banner
+          status="info"
+          title={`Confirm your Player ID: ${profile.playerId || playerId || 'Bound Account'}`}
+          description="Purchases are directly credited via in-game inventory and mail upon PayOS verification."
+        />
+      ) : (
+        <Banner
+          status="info"
+          title="Browsing as Guest"
+          description="All Top-Up prices below are live from the official game server. Selecting any package will prompt you to sign in before proceeding to PayOS checkout."
+          endContent={
+            <Button
+              label="Sign In"
+              variant="secondary"
+              size="sm"
+              icon={<Icon icon={LogIn} size="sm" />}
+              onClick={handleSignInFromGuest}
+            />
+          }
+        />
       )}
 
-      {/* 3. Category Filter Tabs */}
+      {/* Package Category Filter Tabs */}
       <TabList
         value={activeTab}
-        onChange={(value) => setActiveTab(value as 'all' | 'gems' | 'bundles')}
+        onChange={(val) => setActiveTab(val as 'all' | 'gems' | 'bundles')}
         hasDivider
       >
         <Tab
           value="all"
-          label={`All Packages (${packs.length})`}
-          icon={<Layers size={15} />}
+          label="All Packages"
+          icon={<Icon icon={Layers} size="sm" />}
+          endContent={<Badge variant="neutral" label={packs.length} />}
         />
-        <Tab value="gems" label="Pure Gem Packs" icon={<Gem size={15} />} />
-        <Tab value="bundles" label="Hero & Weapon Bundles" icon={<Sword size={15} />} />
+        <Tab
+          value="gems"
+          label="Pure Gem Packs"
+          icon={<Icon icon={Gem} size="sm" />}
+          endContent={<Badge variant="neutral" label={pureGemPacksCount} />}
+        />
+        <Tab
+          value="bundles"
+          label="Hero & Weapon Bundles"
+          icon={<Icon icon={Sword} size="sm" />}
+          endContent={<Badge variant="neutral" label={bundlePacksCount} />}
+        />
       </TabList>
 
-      {/* 4. Product Catalog Grid */}
-      {loadError ? (
+      {/* Top-Up Packages Grid */}
+      {isLoading ? (
+        <Grid columns={{ minWidth: 260, max: 4, repeat: 'fit' }} gap={4} width="100%">
+          {[0, 1, 2, 3].map((idx) => (
+            <Card key={idx} variant="default" padding={5}>
+              <VStack gap={4} hAlign="center" width="100%">
+                <Skeleton width={72} height={72} />
+                <Skeleton width="70%" height={20} />
+                <Skeleton width="50%" height={20} />
+                <Skeleton width="100%" height={36} />
+              </VStack>
+            </Card>
+          ))}
+        </Grid>
+      ) : loadError ? (
         <Card variant="default" padding={6}>
           <EmptyState
-            icon={<AlertCircle size={36} />}
-            title="Catalog Temporarily Unavailable"
+            icon={<Icon icon={AlertCircle} size="lg" color="error" />}
+            title="Unable to Load Treasury Data"
             description={loadError}
             actions={
-              <HStack gap={2} hAlign="center" wrap="wrap">
-                <Button
-                  label="Retry"
-                  variant="secondary"
-                  icon={<RefreshCw size={15} />}
-                  onClick={fetchData}
-                />
-                {!isLoggedIn && (
-                  <Button
-                    label="Sign In"
-                    variant="primary"
-                    icon={<LogIn size={15} />}
-                    onClick={handleGuestSignIn}
-                  />
-                )}
-              </HStack>
+              <Button
+                label="Retry Connection"
+                variant="primary"
+                icon={<Icon icon={RefreshCw} size="sm" />}
+                onClick={() => fetchBackendData(true)}
+              />
             }
           />
         </Card>
       ) : filteredPacks.length === 0 ? (
         <Card variant="default" padding={6}>
           <EmptyState
-            icon={<PackageCheck size={36} />}
-            title="No Packages Found in this Category"
-            description="Please switch category filters or check back once administrators publish additional packs."
+            icon={<Icon icon={Gem} size="lg" color="secondary" />}
+            title="No Packages Available"
+            description="No top-up packages are currently configured in this category."
           />
         </Card>
       ) : (
-        <Grid
-          columns={{ minWidth: 255, max: 4, repeat: 'fit' }}
-          gap={4}
-          width="100%"
-          className={styles.catalogGrid}
-        >
-          {filteredPacks.map((pkg) => {
-            const hasNamedInclusions = hasVisibleInclusionNames(pkg);
-            const isBundle = hasPackInclusions(pkg);
-            const badge = getPackBadge(pkg);
-            const cardA11yLabel = isLoggedIn
-              ? `Buy ${pkg.name}, ${pkg.gemsAmount} Gems, ${pkg.priceVnd.toLocaleString('vi-VN')} VND`
-              : `Sign in required to buy ${pkg.name}, ${pkg.gemsAmount} Gems, ${pkg.priceVnd.toLocaleString('vi-VN')} VND`;
+        <Grid columns={{ minWidth: 260, max: 4, repeat: 'fit' }} gap={4} width="100%">
+          {filteredPacks.map((pack) => {
+            const tierToken = getPackTierToken(pack);
+            const hasBundle = hasPackInclusions(pack);
+            const hasNames = hasVisibleInclusionNames(pack);
 
             return (
-              <ClickableCard
-                key={pkg.id}
-                label={cardA11yLabel}
-                onClick={() => handleSelectPack(pkg)}
-                variant="default"
-                padding={0}
-                height="100%"
-                className={styles.productCard}
-              >
-                <div className={styles.cardInner}>
-                  <div className={styles.cardHeaderRow}>
-                    <Badge variant={badge.variant} label={badge.label} />
-                  </div>
-
-                  <div className={styles.artStage} aria-hidden="true">
-                    <div className={styles.artGlow} />
-                    <GemArt gemsAmount={pkg.gemsAmount} size={88} className={styles.gemArtItem} />
-                  </div>
-
-                  <VStack gap={1.5} hAlign="center" width="100%">
-                    <Heading level={3} justify="center">
-                      {pkg.name}
-                    </Heading>
-                    <HStack gap={1.5} vAlign="center" hAlign="center">
-                      <Gem size={16} className={styles.gemIcon} aria-hidden="true" />
-                      <Text type="large" weight="bold" hasTabularNumbers>
-                        {pkg.gemsAmount.toLocaleString('en-US')}
-                      </Text>
-                      <Text type="supporting" size="sm" className={styles.gemUnit}>
-                        Gems
-                      </Text>
+              <Card key={pack.id} variant="default" elevation="low" padding={5}>
+                <VStack gap={4} hAlign="center" vAlign="between" height="100%" width="100%">
+                  <VStack gap={3} hAlign="center" width="100%">
+                    <HStack hAlign="end" width="100%">
+                      <Token color={tierToken.color} size="sm" label={tierToken.label} />
                     </HStack>
+
+                    <Center paddingBlock={1}>
+                      <GemArt gemsAmount={pack.gemsAmount} size={64} />
+                    </Center>
+
+                    <VStack gap={1} hAlign="center" width="100%">
+                      <Heading level={3} justify="center">
+                        {pack.name}
+                      </Heading>
+                      <HStack gap={1.5} vAlign="center" hAlign="center">
+                        <Icon icon={Gem} size="sm" color="cyan" />
+                        <Text
+                          type="large"
+                          size="xl"
+                          weight="bold"
+                          color="primary"
+                          hasTabularNumbers
+                        >
+                          {pack.gemsAmount.toLocaleString('en-US')}
+                        </Text>
+                        <Text type="label" size="xsm" color="accent" weight="semibold">
+                          GEMS
+                        </Text>
+                      </HStack>
+                    </VStack>
+
+                    <Center width="100%">
+                      {hasBundle ? (
+                        hasNames ? (
+                          <HStack gap={1} wrap="wrap" hAlign="center">
+                            {pack.unitNames?.map((name, i) => (
+                              <Token
+                                key={`u-${i}`}
+                                size="sm"
+                                color="orange"
+                                icon={<Icon icon={Users} size="xsm" />}
+                                label={name}
+                              />
+                            ))}
+                            {pack.weaponNames?.map((name, i) => (
+                              <Token
+                                key={`w-${i}`}
+                                size="sm"
+                                color="blue"
+                                icon={<Icon icon={Shield} size="xsm" />}
+                                label={name}
+                              />
+                            ))}
+                            {pack.trinketNames?.map((name, i) => (
+                              <Token
+                                key={`t-${i}`}
+                                size="sm"
+                                color="purple"
+                                icon={<Icon icon={Sparkles} size="xsm" />}
+                                label={name}
+                              />
+                            ))}
+                          </HStack>
+                        ) : (
+                          <Token
+                            size="sm"
+                            color="green"
+                            icon={<Icon icon={PackageCheck} size="xsm" />}
+                            label="Bonus Equipment Included"
+                          />
+                        )
+                      ) : (
+                        <Text
+                          type="supporting"
+                          size="xsm"
+                          color="secondary"
+                          justify="center"
+                          display="block"
+                        >
+                          Standard Gem Top-Up Package
+                        </Text>
+                      )}
+                    </Center>
                   </VStack>
 
-                  <div className={styles.inclusionsArea}>
-                    {hasNamedInclusions ? (
-                      <div className={styles.inclusionsRow}>
-                        {pkg.unitNames?.map((unit, idx) => (
-                          <Token
-                            key={`u-${idx}`}
-                            label={unit}
-                            size="sm"
-                            color="blue"
-                            icon={<Users size={12} />}
-                          />
-                        ))}
-                        {pkg.weaponNames?.map((weapon, idx) => (
-                          <Token
-                            key={`w-${idx}`}
-                            label={weapon}
-                            size="sm"
-                            color="cyan"
-                            icon={<Sword size={12} />}
-                          />
-                        ))}
-                        {pkg.trinketNames?.map((trinket, idx) => (
-                          <Token
-                            key={`t-${idx}`}
-                            label={trinket}
-                            size="sm"
-                            color="yellow"
-                            icon={<Shield size={12} />}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <Text
-                        type="supporting"
-                        size="xsm"
-                        color="secondary"
-                        justify="center"
-                        display="block"
-                      >
-                        {isBundle
-                          ? 'In-Game Hero & Equipment Bundle'
-                          : 'Standard Gem Top-Up Package'}
-                      </Text>
-                    )}
-                  </div>
-
-                  <div className={styles.cardFooter}>
-                    <div className={styles.priceCta} aria-hidden="true">
-                      <Text type="label" weight="bold" hasTabularNumbers className={styles.priceLabel}>
-                        {pkg.priceVnd.toLocaleString('vi-VN')} VND
-                      </Text>
-                      {isLoggedIn ? (
-                        <ChevronRight size={16} className={styles.priceIcon} />
-                      ) : (
-                        <Lock size={14} className={styles.priceIcon} />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </ClickableCard>
+                  <Button
+                    label={`${pack.priceVnd.toLocaleString('vi-VN')} VND`}
+                    variant="primary"
+                    size="md"
+                    width="100%"
+                    tooltip={
+                      isLoggedIn
+                        ? `Proceed to checkout for ${pack.name}`
+                        : `Sign in required to purchase ${pack.name}`
+                    }
+                    endContent={<Icon icon={isLoggedIn ? ChevronRight : Lock} size="xsm" />}
+                    onClick={() => handleSelectPack(pack)}
+                  />
+                </VStack>
+              </Card>
             );
           })}
         </Grid>

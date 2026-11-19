@@ -1,8 +1,6 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Bot, Paperclip, Sparkles, User } from 'lucide-react';
-import { Avatar, AvatarStatusDot } from '@astryxdesign/core/Avatar';
-import { Badge } from '@astryxdesign/core/Badge';
-import { Button } from '@astryxdesign/core/Button';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Bot, Paperclip, ShieldCheck } from 'lucide-react';
+import { Avatar } from '@astryxdesign/core/Avatar';
 import { Card } from '@astryxdesign/core/Card';
 import {
   ChatComposer,
@@ -10,74 +8,42 @@ import {
   ChatMessage,
   ChatMessageBubble,
   ChatMessageList,
-  ChatMessageMetadata,
-  ChatSendButton,
 } from '@astryxdesign/core/Chat';
+import { Divider } from '@astryxdesign/core/Divider';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
-import { Heading } from '@astryxdesign/core/Heading';
-import { Layout, LayoutContent, LayoutHeader, HStack, VStack } from '@astryxdesign/core/Layout';
+import { Icon } from '@astryxdesign/core/Icon';
+import { IconButton } from '@astryxdesign/core/IconButton';
+import { HStack, VStack } from '@astryxdesign/core/Layout';
 import { Lightbox } from '@astryxdesign/core/Lightbox';
+import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Text } from '@astryxdesign/core/Text';
+import { Thumbnail } from '@astryxdesign/core/Thumbnail';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
+import { Token } from '@astryxdesign/core/Token';
 import { useToast } from '@astryxdesign/core/Toast';
 import { apiClient } from '../../../core/network/apiClient';
 import { useSyncStore } from '../../../store/syncStore';
 import { supportHubService, type SupportMessageDto } from '../services/SupportHubService';
 import { resolveSupportAttachmentUrl } from '../supportMedia';
-import styles from './CounselThreadView.module.css';
 
-interface CounselThreadViewProps {
-  mode: 'player' | 'staff';
-  targetPlayerId?: string;
-  headerTitle: string;
-  headerSubtitle?: string;
-  headerBadge?: string;
-  headerStart?: React.ReactNode;
-  headerEnd?: React.ReactNode;
-  embedded?: boolean;
-}
-
-interface MessageRun {
-  key: string;
-  senderRole: 'user' | 'assistant';
-  items: SupportMessageDto[];
-}
-
-export const CounselThreadView: React.FC<CounselThreadViewProps> = ({
-  mode,
-  targetPlayerId,
-  headerTitle,
-  headerSubtitle,
-  headerBadge,
-  headerStart,
-  headerEnd,
-  embedded = false,
-}) => {
-  const toast = useToast();
+export const CounselThreadView: React.FC = () => {
+  const showToast = useToast();
   const { setHasUnreadCounsel } = useSyncStore();
 
   const [messages, setMessages] = useState<SupportMessageDto[]>([]);
   const [inputText, setInputText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [isConnected, setIsConnected] = useState(supportHubService.isConnected());
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const chatEndpoint =
-    mode === 'staff' && targetPlayerId
-      ? `/api/support/admin/chat/${targetPlayerId}`
-      : '/api/support/chat';
 
   useEffect(() => {
-    if (mode === 'player') {
-      setHasUnreadCounsel(false);
-    }
-  }, [mode, setHasUnreadCounsel]);
+    setHasUnreadCounsel(false);
+  }, [setHasUnreadCounsel]);
 
   const syncChatHistory = useCallback(async () => {
-    if (mode === 'staff' && !targetPlayerId) return;
     try {
-      const response = await apiClient.get<SupportMessageDto[]>(chatEndpoint);
+      const response = await apiClient.get<SupportMessageDto[]>('/api/support/chat');
       if (response.data && Array.isArray(response.data)) {
         setMessages((prev) => {
           if (
@@ -90,21 +56,18 @@ export const CounselThreadView: React.FC<CounselThreadViewProps> = ({
         });
       }
     } catch (error) {
-      console.warn('Failed to sync chat history:', error);
+      console.warn('Failed to sync counsel history:', error);
     }
-  }, [chatEndpoint, mode, targetPlayerId]);
+  }, []);
 
   useEffect(() => {
-    if (mode === 'staff' && !targetPlayerId) return;
     let isMounted = true;
-    setMessages([]);
 
     syncChatHistory();
     supportHubService.connect();
 
-    const unsubMsg = supportHubService.onMessage((receivedPlayerId, msg) => {
+    const unsubMsg = supportHubService.onMessage((_playerId, msg) => {
       if (!isMounted) return;
-      if (mode === 'staff' && receivedPlayerId !== targetPlayerId) return;
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
@@ -139,16 +102,16 @@ export const CounselThreadView: React.FC<CounselThreadViewProps> = ({
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
     };
-  }, [mode, targetPlayerId, syncChatHistory]);
+  }, [syncChatHistory]);
 
   const handleSend = async (rawValue: string) => {
     const trimmed = rawValue.trim();
-    if (!trimmed) return;
-    if (mode === 'staff' && !targetPlayerId) return;
+    if (!trimmed || isSending) return;
 
     setInputText('');
+    setIsSending(true);
     try {
-      const response = await apiClient.post<SupportMessageDto>(chatEndpoint, {
+      const response = await apiClient.post<SupportMessageDto>('/api/support/chat', {
         text: trimmed,
         attachmentUrl: '',
       });
@@ -161,31 +124,30 @@ export const CounselThreadView: React.FC<CounselThreadViewProps> = ({
       }
     } catch (err) {
       console.error('Failed to send message:', err);
-      toast({
-        body: 'Message could not be sent. Please try again.',
+      setInputText(trimmed);
+      showToast({
+        body: 'Could not deliver your message. Please try again.',
         type: 'error',
-        uniqueID: 'counsel-send-error',
-        collisionBehavior: 'overwrite',
       });
+    } finally {
+      setIsSending(false);
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (mode === 'staff' && !targetPlayerId) return;
-
+  const uploadImageFile = async (file: File) => {
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const uploadResponse = await apiClient.post<{ url: string }>('/api/support/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const uploadResponse = await apiClient.post<{ url: string }>(
+        '/api/support/upload',
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
       const imageUrl = uploadResponse.data.url;
 
-      const response = await apiClient.post<SupportMessageDto>(chatEndpoint, {
+      const response = await apiClient.post<SupportMessageDto>('/api/support/chat', {
         text: '',
         attachmentUrl: imageUrl,
       });
@@ -198,240 +160,136 @@ export const CounselThreadView: React.FC<CounselThreadViewProps> = ({
       }
     } catch (error) {
       console.error('Image upload failed:', error);
-      toast({
-        body: 'Failed to upload image attachment.',
+      showToast({
+        body: 'Could not upload the image attachment. Please try a smaller image.',
         type: 'error',
-        uniqueID: 'counsel-upload-error',
-        collisionBehavior: 'overwrite',
       });
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const messageRuns = useMemo<MessageRun[]>(() => {
-    const runs: MessageRun[] = [];
-    for (const msg of messages) {
-      const fromPlayer = msg.sender.toLowerCase() === 'user';
-      const senderRole: 'user' | 'assistant' =
-        mode === 'player' ? (fromPlayer ? 'user' : 'assistant') : !fromPlayer ? 'user' : 'assistant';
-
-      const prevRun = runs[runs.length - 1];
-      if (prevRun && prevRun.senderRole === senderRole) {
-        prevRun.items.push(msg);
-      } else {
-        runs.push({
-          key: msg.id,
-          senderRole,
-          items: [msg],
-        });
+  const handleTriggerFilePicker = () => {
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = 'image/*';
+    picker.onchange = () => {
+      const file = picker.files?.[0];
+      if (file) {
+        void uploadImageFile(file);
       }
-    }
-    return runs;
-  }, [messages, mode]);
-
-  const counterpartLabel = mode === 'player' ? 'Keeper of Records' : headerTitle;
-  const resolvedSubtitle =
-    headerSubtitle ||
-    (isConnected ? 'Real-time SignalR counsel connected' : 'Active 4s live polling sync');
-
-  const chatCore = (
-    <Layout
-      height="fill"
-      defaultHasDividers={false}
-      header={
-        <LayoutHeader hasDivider padding={4}>
-          <HStack hAlign="between" vAlign="center" gap={3} width="100%">
-            <HStack gap={3} vAlign="center">
-              {headerStart}
-              <Avatar
-                size={36}
-                name={counterpartLabel}
-                status={
-                  <AvatarStatusDot
-                    variant={isConnected ? 'success' : 'neutral'}
-                    label={isConnected ? 'Online' : 'Polling'}
-                  />
-                }
-              />
-              <VStack gap={0.5}>
-                <HStack gap={2} vAlign="center" wrap="wrap">
-                  <Heading level={3}>{headerTitle}</Heading>
-                  {headerBadge && <Badge variant="yellow" label={headerBadge} />}
-                </HStack>
-                <Text type="supporting" size="xsm" color="secondary">
-                  {resolvedSubtitle}
-                </Text>
-              </VStack>
-            </HStack>
-
-            {headerEnd}
-          </HStack>
-        </LayoutHeader>
-      }
-      content={
-        <LayoutContent padding={0} isScrollable={false}>
-          <ChatLayout
-            density="balanced"
-            emptyState={
-              <EmptyState
-                icon={mode === 'player' ? <Bot size={36} /> : <User size={36} />}
-                title={mode === 'player' ? 'Counsel Live Support' : 'Empty Support Thread'}
-                description={
-                  mode === 'player'
-                    ? 'Have a question about your top-up, in-game delivery, or PayOS receipt? Send a message below to reach the Keeper of Records.'
-                    : 'No messages exchanged in this player thread yet.'
-                }
-                actions={
-                  mode === 'player' ? (
-                    <Badge
-                      variant="cyan"
-                      icon={<Sparkles size={13} />}
-                      label="Monitored by official Game Masters"
-                    />
-                  ) : undefined
-                }
-              />
-            }
-            composer={
-              <>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className={styles.hiddenFileInput}
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                />
-                <ChatComposer
-                  value={inputText}
-                  onChange={setInputText}
-                  onSubmit={(val) => void handleSend(val)}
-                  isDisabled={isUploading}
-                  placeholder={
-                    isUploading
-                      ? 'Uploading image attachment...'
-                      : mode === 'staff'
-                        ? 'Inscribe your reply...'
-                        : 'Type your message to the Keeper of Records...'
-                  }
-                  headerContext={
-                    isUploading ? (
-                      <Text type="supporting" size="xsm" color="accent">
-                        Uploading image attachment...
-                      </Text>
-                    ) : undefined
-                  }
-                  footerActions={
-                    <Button
-                      label="Attach image"
-                      variant="ghost"
-                      size="md"
-                      isIconOnly
-                      icon={<Paperclip size={17} />}
-                      tooltip="Attach screenshot or PayOS receipt"
-                      isDisabled={isUploading}
-                      onClick={() => fileInputRef.current?.click()}
-                    />
-                  }
-                  sendButton={<ChatSendButton />}
-                />
-              </>
-            }
-          >
-            {messageRuns.length > 0 && (
-              <ChatMessageList>
-                {messageRuns.map((run) => {
-                  const isOther = run.senderRole === 'assistant';
-                  return (
-                    <ChatMessage
-                      key={run.key}
-                      sender={run.senderRole}
-                      avatar={
-                        isOther ? (
-                          <Avatar size={32} name={counterpartLabel} />
-                        ) : undefined
-                      }
-                    >
-                      {run.items.map((msg, idx) => {
-                        const isFirst = idx === 0;
-                        const isLast = idx === run.items.length - 1;
-                        const groupPos =
-                          run.items.length === 1
-                            ? undefined
-                            : isFirst
-                              ? 'first'
-                              : isLast
-                                ? 'last'
-                                : 'middle';
-                        const safeImgUrl = resolveSupportAttachmentUrl(msg.attachmentUrl);
-
-                        return (
-                          <React.Fragment key={msg.id}>
-                            {msg.text && (
-                              <ChatMessageBubble
-                                group={groupPos}
-                                name={isOther && isFirst ? counterpartLabel : undefined}
-                                metadata={
-                                  isLast && !safeImgUrl ? (
-                                    <ChatMessageMetadata
-                                      timestamp={<Timestamp value={msg.createdAt} format="time" />}
-                                    />
-                                  ) : undefined
-                                }
-                              >
-                                {msg.text}
-                              </ChatMessageBubble>
-                            )}
-                            {safeImgUrl && (
-                              <ChatMessageBubble
-                                variant="ghost"
-                                name={!msg.text && isOther && isFirst ? counterpartLabel : undefined}
-                                metadata={
-                                  isLast ? (
-                                    <ChatMessageMetadata
-                                      timestamp={<Timestamp value={msg.createdAt} format="time" />}
-                                    />
-                                  ) : undefined
-                                }
-                              >
-                                <button
-                                  type="button"
-                                  className={styles.imageButton}
-                                  onClick={() => setLightboxSrc(safeImgUrl)}
-                                  aria-label="Inspect attached screenshot fullscreen"
-                                >
-                                  <img
-                                    src={safeImgUrl}
-                                    alt="Support chat attachment"
-                                    className={styles.imageAttachment}
-                                  />
-                                </button>
-                              </ChatMessageBubble>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                    </ChatMessage>
-                  );
-                })}
-              </ChatMessageList>
-            )}
-          </ChatLayout>
-        </LayoutContent>
-      }
-    />
-  );
+    };
+    picker.click();
+  };
 
   return (
-    <>
-      {embedded ? (
-        <div className={styles.embeddedFrame}>{chatCore}</div>
-      ) : (
-        <Card variant="default" elevation="med" padding={0} className={styles.standaloneCard}>
-          {chatCore}
-        </Card>
-      )}
+    <Card padding={0} elevation="low">
+      <HStack hAlign="between" vAlign="center" gap={3} padding={4} width="100%">
+        <HStack gap={3} vAlign="center">
+          <Avatar name="Keeper of Records" size="sm" />
+          <VStack gap={0.5}>
+            <HStack gap={2} vAlign="center" wrap="wrap">
+              <Text weight="semibold">Keeper of Records</Text>
+              <Token
+                icon={<Icon icon={ShieldCheck} size="xsm" />}
+                label="Official GM"
+                size="sm"
+              />
+            </HStack>
+            <Text type="supporting" size="2xs" color="secondary">
+              {isConnected ? 'Live Real-Time Counsel Online' : 'Active Support Counsel Service'}
+            </Text>
+          </VStack>
+        </HStack>
+
+        <HStack gap={1.5} vAlign="center">
+          <StatusDot
+            variant={isConnected ? 'success' : 'warning'}
+            label={isConnected ? 'Real-time connection active' : 'Syncing messages'}
+            isPulsing={isConnected}
+          />
+          <Text type="supporting" size="2xs" color="secondary">
+            {isConnected ? 'Live' : 'Syncing'}
+          </Text>
+        </HStack>
+      </HStack>
+
+      <Divider />
+
+      <VStack height="65dvh" minHeight={480} isScrollable width="100%">
+        <ChatLayout
+          density="balanced"
+          emptyState={
+            <EmptyState
+              icon={<Icon icon={Bot} size="lg" color="accent" />}
+              title="Counsel Live Support"
+              description="Have an inquiry about your top-up, in-game deliveries, or account? Send a message below to summon the Keeper of Records."
+            />
+          }
+          composer={
+            <ChatComposer
+              value={inputText}
+              onChange={setInputText}
+              onSubmit={handleSend}
+              isDisabled={isUploading || isSending}
+              placeholder={
+                isUploading
+                  ? 'Uploading attachment...'
+                  : 'Type your message to the Keeper of Records...'
+              }
+              footerActions={
+                <IconButton
+                  icon={<Icon icon={Paperclip} size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                  label="Attach screenshot or receipt image"
+                  isDisabled={isUploading}
+                  onClick={handleTriggerFilePicker}
+                />
+              }
+            />
+          }
+        >
+          {messages.length > 0 && (
+            <ChatMessageList>
+              {messages.map((msg) => {
+                const self = msg.sender.toLowerCase() === 'user';
+                const resolvedImg = resolveSupportAttachmentUrl(msg.attachmentUrl);
+
+                return (
+                  <ChatMessage
+                    key={msg.id}
+                    sender={self ? 'user' : 'assistant'}
+                    name={self ? 'You' : 'Keeper of Records'}
+                    metadata={
+                      <Timestamp
+                        value={msg.createdAt}
+                        format="time"
+                        size="2xs"
+                        color="secondary"
+                      />
+                    }
+                  >
+                    <ChatMessageBubble>
+                      <VStack gap={2}>
+                        {msg.text && <Text color="inherit">{msg.text}</Text>}
+                        {resolvedImg && (
+                          <Thumbnail
+                            src={resolvedImg}
+                            alt="Support attachment"
+                            label="Inspect image attachment"
+                            onClick={() => setLightboxSrc(resolvedImg)}
+                          />
+                        )}
+                      </VStack>
+                    </ChatMessageBubble>
+                  </ChatMessage>
+                );
+              })}
+            </ChatMessageList>
+          )}
+        </ChatLayout>
+      </VStack>
 
       <Lightbox
         isOpen={Boolean(lightboxSrc)}
@@ -440,11 +298,11 @@ export const CounselThreadView: React.FC<CounselThreadViewProps> = ({
         }}
         media={
           lightboxSrc
-            ? { src: lightboxSrc, alt: 'Support chat screenshot attachment', type: 'image' }
-            : { src: '', alt: '' }
+            ? { src: lightboxSrc, alt: 'Support attachment', type: 'image' }
+            : []
         }
         hasZoom
       />
-    </>
+    </Card>
   );
 };
