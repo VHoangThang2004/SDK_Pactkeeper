@@ -1,0 +1,56 @@
+@layer reset, astryx-base, astryx-theme, product;
+
+@layer reset {
+  html,
+  body {
+    background-color: var(--color-background-body);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .heading-font {
+    font-family: var(--font-family-heading);
+    letter-spacing: 0.4px;
+    color: var(--color-text-primary);
+  }
+
+  a:not([class*='astryx-']) {
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: all var(--duration-fast, 150ms) ease;
+  }
+
+  a:not([class*='astryx-']):hover {
+    color: var(--color-text-accent);
+  }
+}
+
+/* Custom modern gaming scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background-body);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}

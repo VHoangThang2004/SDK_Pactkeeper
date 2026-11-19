@@ -1,0 +1,38 @@
+.gemIcon {
+  color: var(--color-icon-cyan);
+  flex-shrink: 0;
+}
+
+.amountText {
+  color: var(--color-text-accent);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.desktopTableWrap {
+  width: 100%;
+  display: block;
+}
+
+.mobileCardsWrap {
+  width: 100%;
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .desktopTableWrap {
+    display: none;
+  }
+
+  .mobileCardsWrap {
+    display: block;
+  }
+}

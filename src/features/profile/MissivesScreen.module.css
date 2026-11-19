@@ -1,0 +1,37 @@
+.iconRing {
+  width: var(--spacing-9);
+  height: var(--spacing-9);
+  border-radius: var(--radius-element);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.iconSuccess {
+  background: var(--color-background-green);
+  color: var(--color-icon-success);
+}
+
+.iconError {
+  background: var(--color-background-red);
+  color: var(--color-icon-red);
+}
+
+.iconPromo {
+  background: var(--color-accent-muted);
+  color: var(--color-icon-accent);
+}
+
+.iconInfo {
+  background: var(--color-info-muted);
+  color: var(--color-icon-info);
+}
+
+.itemUnread {
+  background: var(--color-overlay-hover);
+}
+
+.itemRead {
+  opacity: 0.78;
+}

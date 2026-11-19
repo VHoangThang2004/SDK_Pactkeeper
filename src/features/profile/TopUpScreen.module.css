@@ -1,0 +1,185 @@
+.heroCard {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--color-border-emphasized);
+}
+
+.heroGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 65% 85% at 85% 50%, var(--color-info-muted), transparent 70%),
+    radial-gradient(ellipse 55% 75% at 15% 10%, var(--color-accent-muted), transparent 70%);
+}
+
+.heroLayout {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-6);
+}
+
+.heroCopy {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.heroArt {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 22px var(--color-info-muted));
+}
+
+.verifyIdentity {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.xpBarWrap {
+  width: 110px;
+}
+
+.balanceTile {
+  min-width: 138px;
+}
+
+.gemIcon {
+  color: var(--color-icon-cyan);
+  flex-shrink: 0;
+}
+
+.gemUnit {
+  color: var(--color-text-cyan);
+}
+
+.goldIcon {
+  color: var(--color-icon-accent);
+  flex-shrink: 0;
+}
+
+.catalogGrid {
+  grid-auto-rows: 1fr;
+  align-items: stretch;
+}
+
+.productCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+.productCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-emphasized);
+}
+
+.cardInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  padding: var(--spacing-4);
+  gap: var(--spacing-3);
+}
+
+.cardHeaderRow {
+  width: 100%;
+  min-height: var(--spacing-6);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.artStage {
+  position: relative;
+  width: 100%;
+  height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.artGlow {
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle, var(--color-info-muted) 0%, transparent 72%);
+}
+
+.gemArtItem {
+  position: relative;
+  z-index: 1;
+}
+
+.inclusionsArea {
+  flex: 1 0 auto;
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-block: var(--spacing-1);
+}
+
+.inclusionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-1-5);
+}
+
+.cardFooter {
+  width: 100%;
+  padding-top: var(--spacing-2);
+  margin-top: auto;
+}
+
+.priceCta {
+  width: 100%;
+  min-height: var(--size-element-lg);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-element);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1-5);
+  transition: filter var(--duration-fast) ease;
+}
+
+.productCard:hover .priceCta {
+  filter: brightness(1.06);
+}
+
+.priceLabel {
+  color: var(--color-on-accent);
+}
+
+.priceIcon {
+  color: var(--color-on-accent);
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .heroLayout {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .heroArt {
+    align-self: center;
+  }
+
+  .balanceTile {
+    flex: 1 1 130px;
+  }
+}

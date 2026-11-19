@@ -1,0 +1,39 @@
+.pageCenter {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--spacing-6);
+}
+
+.cardSuccess {
+  border-color: var(--color-border-green);
+}
+
+.cardFailed {
+  border-color: var(--color-border-red);
+}
+
+.auraSuccess,
+.auraFailed {
+  width: 84px;
+  height: 84px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auraSuccess {
+  background: var(--color-success-muted);
+  border: 1px solid var(--color-border-green);
+  color: var(--color-icon-success);
+}
+
+.auraFailed {
+  background: var(--color-error-muted);
+  border: 1px solid var(--color-border-red);
+  color: var(--color-icon-error);
+}
+
+.deliverIcon {
+  color: var(--color-icon-success);
+}

@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { StorageService } from '../core/services/storageService';
 
+export const STAFF_ROLES = ['Admin', 'Technical Support', 'Support', 'Moderator'] as const;
+
+export const isStaffRole = (role: string | null | undefined): boolean =>
+  Boolean(role && (STAFF_ROLES as readonly string[]).includes(role));
+
 export interface PendingRedirect {
   path: string;
   state?: unknown;

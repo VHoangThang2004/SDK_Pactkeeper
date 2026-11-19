@@ -1,0 +1,54 @@
+.page {
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  background: var(--color-background-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-6) var(--spacing-4);
+  overflow: hidden;
+}
+
+.backdropGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 75% 45% at 50% 0%, var(--color-accent-muted), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 95%, var(--color-info-muted), transparent 70%);
+}
+
+.shell {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+
+.brandIconWrap {
+  width: var(--spacing-12);
+  height: var(--spacing-12);
+  border-radius: var(--radius-container);
+  background: var(--color-background-card);
+  border: 1px solid var(--color-border-emphasized);
+  color: var(--color-icon-accent);
+  box-shadow: var(--shadow-med);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.googleBtnWrap {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--spacing-1);
+}
+
+.benefitIcon {
+  color: var(--color-icon-success);
+  flex-shrink: 0;
+}

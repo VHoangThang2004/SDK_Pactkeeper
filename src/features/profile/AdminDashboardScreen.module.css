@@ -1,0 +1,35 @@
+.desktopWorkspace {
+  width: 100%;
+  display: block;
+}
+
+.workspaceCard {
+  width: 100%;
+  height: clamp(540px, 72dvh, 760px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyPane {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-6);
+}
+
+.mobileInbox {
+  width: 100%;
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .desktopWorkspace {
+    display: none;
+  }
+
+  .mobileInbox {
+    display: block;
+  }
+}
