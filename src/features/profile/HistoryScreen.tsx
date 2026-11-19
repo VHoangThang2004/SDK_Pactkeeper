@@ -3,37 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import {
   ScrollText,
   RefreshCw,
-  Clock,
   ExternalLink,
   XCircle,
   Gem,
-  CheckCircle2,
 } from 'lucide-react';
 import { AlertDialog } from '@astryxdesign/core/AlertDialog';
 import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
-import { Divider } from '@astryxdesign/core/Divider';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Heading } from '@astryxdesign/core/Heading';
+import { Icon } from '@astryxdesign/core/Icon';
 import { HStack, VStack } from '@astryxdesign/core/Layout';
-import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
+import { List, ListItem } from '@astryxdesign/core/List';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
-import {
-  Table,
-  pixel,
-  proportional,
-  useTableSortable,
-  type TableColumn,
-  type TableSortState,
-} from '@astryxdesign/core/Table';
+import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
+import { Table, proportional, type TableColumn } from '@astryxdesign/core/Table';
 import { Text } from '@astryxdesign/core/Text';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { useToast } from '@astryxdesign/core/Toast';
 import { apiClient } from '../../core/network/apiClient';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { useSyncStore } from '../../store/syncStore';
-import styles from './HistoryScreen.module.css';
 
 interface PaymentHistory extends Record<string, unknown> {
   orderCode: string;
@@ -48,38 +40,38 @@ type StatusFilter = 'all' | 'completed' | 'pending' | 'cancelled';
 
 const PAYOS_EXPIRY_MS = 15 * 60 * 1000;
 
-const formatCountdown = (seconds: number): string => {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-};
-
 export const HistoryScreen: React.FC = () => {
   const navigate = useNavigate();
-  const toast = useToast();
-  const { profileUpdateTimestamp } = useSyncStore();
+  const showToast = useToast();
+  const isMobile = useIsMobile();
 
   const [history, setHistory] = useState<PaymentHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [cancellingOrderCode, setCancellingOrderCode] = useState<string | null>(null);
-  const [confirmCancelOrderCode, setConfirmCancelOrderCode] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState<number>(() => Date.now());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cancelTargetOrder, setCancelTargetOrder] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [sort, setSort] = useState<TableSortState>([
-    { sortKey: 'createdAt', direction: 'descending' },
-  ]);
 
-  const sortPlugin = useTableSortable<PaymentHistory>({ sort, onSortChange: setSort });
+  const { profileUpdateTimestamp } = useSyncStore();
 
   const fetchHistory = useCallback(async (isInitial = false) => {
-    if (isInitial) setIsLoading(true);
+    if (isInitial) {
+      setIsLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     try {
       const response = await apiClient.get<PaymentHistory[]>('/api/payment/history');
       setHistory(response.data || []);
     } catch (err) {
       console.error('Error fetching history:', err);
     } finally {
-      if (isInitial) setIsLoading(false);
+      if (isInitial) {
+        setIsLoading(false);
+      } else {
+        setIsRefreshing(false);
+      }
     }
   }, []);
 
@@ -88,7 +80,9 @@ export const HistoryScreen: React.FC = () => {
   }, [fetchHistory]);
 
   useEffect(() => {
-    fetchHistory(false);
+    if (profileUpdateTimestamp > 0) {
+      fetchHistory(false);
+    }
   }, [profileUpdateTimestamp, fetchHistory]);
 
   useEffect(() => {
@@ -98,7 +92,7 @@ export const HistoryScreen: React.FC = () => {
   }, [fetchHistory]);
 
   useEffect(() => {
-    const hasPending = history.some((h) => h.status.toLowerCase() === 'pending');
+    const hasPending = history.some((h) => h.status.toUpperCase() === 'PENDING');
     if (!hasPending) return;
 
     const interval = setInterval(() => {
@@ -109,11 +103,14 @@ export const HistoryScreen: React.FC = () => {
   }, [history, fetchHistory]);
 
   useEffect(() => {
+    const hasPending = history.some((h) => h.status.toUpperCase() === 'PENDING');
+    if (!hasPending) return;
+
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [history]);
 
   const getRemainingSeconds = useCallback(
     (createdAtStr: string): number => {
@@ -124,163 +121,180 @@ export const HistoryScreen: React.FC = () => {
     [currentTime]
   );
 
+  const formatCountdown = (seconds: number): string => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const classifyOrder = useCallback(
+    (txn: PaymentHistory) => {
+      const upper = txn.status.toUpperCase();
+      const isCompleted = upper === 'CONFIRMED' || upper === 'PAID';
+      const isPending = upper === 'PENDING';
+      const remainingSec = getRemainingSeconds(txn.createdAt);
+      const isExpired = isPending && remainingSec <= 0;
+      const isActivePending = isPending && !isExpired;
+      const isCancelledOrExpired = upper === 'CANCELLED' || isExpired;
+      return {
+        isCompleted,
+        isActivePending,
+        isExpired,
+        isCancelledOrExpired,
+        remainingSec,
+      };
+    },
+    [getRemainingSeconds]
+  );
+
+  const counts = useMemo(() => {
+    let completed = 0;
+    let pending = 0;
+    let cancelled = 0;
+    for (const txn of history) {
+      const state = classifyOrder(txn);
+      if (state.isCompleted) completed++;
+      else if (state.isActivePending) pending++;
+      else if (state.isCancelledOrExpired) cancelled++;
+    }
+    return { all: history.length, completed, pending, cancelled };
+  }, [history, classifyOrder]);
+
+  const filteredHistory = useMemo(
+    () =>
+      history.filter((txn) => {
+        const state = classifyOrder(txn);
+        if (statusFilter === 'completed') return state.isCompleted;
+        if (statusFilter === 'pending') return state.isActivePending;
+        if (statusFilter === 'cancelled') return state.isCancelledOrExpired;
+        return true;
+      }),
+    [history, statusFilter, classifyOrder]
+  );
+
   const handlePayNow = useCallback(
     (checkoutUrl?: string) => {
       if (!checkoutUrl) {
-        toast({
+        showToast({
           body: 'Payment link unavailable for this order. Please initiate a new order.',
           type: 'error',
-          uniqueID: 'missing-checkout-url',
-          collisionBehavior: 'overwrite',
         });
         return;
       }
       window.location.href = checkoutUrl;
     },
-    [toast]
+    [showToast]
   );
 
   const handleConfirmCancelOrder = async () => {
-    const targetOrderCode = confirmCancelOrderCode;
-    if (!targetOrderCode) return;
-
-    setCancellingOrderCode(targetOrderCode);
+    if (!cancelTargetOrder) return;
+    setIsCancelling(true);
     try {
-      const res = await apiClient.post(`/api/payment/cancel-order/${targetOrderCode}`);
+      const res = await apiClient.post(`/api/payment/cancel-order/${cancelTargetOrder}`);
       if (res.status === 200) {
         setHistory((prev) =>
           prev.map((item) =>
-            item.orderCode === targetOrderCode ? { ...item, status: 'CANCELLED' } : item
+            item.orderCode === cancelTargetOrder ? { ...item, status: 'CANCELLED' } : item
           )
         );
-        setConfirmCancelOrderCode(null);
-        toast({
-          body: `Cancelled pending order TXN-${targetOrderCode}.`,
+        showToast({
+          body: `Pending order TXN-${cancelTargetOrder} has been cancelled.`,
           type: 'info',
-          uniqueID: `cancel-${targetOrderCode}`,
         });
+        setCancelTargetOrder(null);
       }
     } catch (err: unknown) {
-      const apiMsg = (err as { response?: { data?: { message?: string } } })?.response?.data
-        ?.message;
-      toast({
-        body: apiMsg || 'Failed to cancel the pending order.',
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      console.error('Failed to cancel order:', err);
+      showToast({
+        body: axiosErr.response?.data?.message || 'Failed to cancel the pending order.',
         type: 'error',
-        uniqueID: 'cancel-order-failed',
       });
     } finally {
-      setCancellingOrderCode(null);
+      setIsCancelling(false);
     }
   };
 
-  const filteredHistory = useMemo(() => {
-    const filtered = history.filter((txn) => {
-      const statusUpper = txn.status.toUpperCase();
-      const isCompleted = statusUpper === 'CONFIRMED' || statusUpper === 'PAID';
-      const isPending = statusUpper === 'PENDING';
-      const remainingSec = getRemainingSeconds(txn.createdAt);
-      const isExpired = isPending && remainingSec <= 0;
-
-      if (statusFilter === 'completed') return isCompleted;
-      if (statusFilter === 'pending') return isPending && !isExpired;
-      if (statusFilter === 'cancelled') return statusUpper === 'CANCELLED' || isExpired;
-      return true;
-    });
-
-    if (sort.length === 0) return filtered;
-    const activeSort = sort[0];
-    const dir = activeSort.direction === 'ascending' ? 1 : -1;
-
-    return [...filtered].sort((a, b) => {
-      if (activeSort.sortKey === 'createdAt') {
-        return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
-      }
-      if (activeSort.sortKey === 'amount') {
-        return (a.amount - b.amount) * dir;
-      }
-      if (activeSort.sortKey === 'gemsAmount') {
-        return (a.gemsAmount - b.gemsAmount) * dir;
-      }
-      return 0;
-    });
-  }, [history, statusFilter, sort, getRemainingSeconds]);
-
-  const renderStatusBadge = useCallback(
+  const renderStatus = useCallback(
     (txn: PaymentHistory) => {
-      const statusUpper = txn.status.toUpperCase();
-      const isCompleted = statusUpper === 'CONFIRMED' || statusUpper === 'PAID';
-      const isPending = statusUpper === 'PENDING';
-      const remainingSec = getRemainingSeconds(txn.createdAt);
-      const isExpired = isPending && remainingSec <= 0;
-
+      const { isCompleted, isActivePending, isExpired, remainingSec } = classifyOrder(txn);
       if (isCompleted) {
         return (
-          <Badge variant="success" icon={<CheckCircle2 size={13} />} label="Delivered" />
+          <HStack gap={2} vAlign="center">
+            <StatusDot variant="success" label="Order delivered" />
+            <Text size="sm" weight="medium">
+              Delivered
+            </Text>
+          </HStack>
         );
       }
-      if (isPending && !isExpired) {
+      if (isActivePending) {
         return (
-          <Badge
-            variant="warning"
-            icon={<Clock size={13} />}
-            label={`Pending (${formatCountdown(remainingSec)})`}
-          />
+          <HStack gap={2} vAlign="center">
+            <StatusDot variant="warning" label="Payment pending" isPulsing />
+            <Text size="sm" weight="medium" hasTabularNumbers>
+              Pending ({formatCountdown(remainingSec)})
+            </Text>
+          </HStack>
         );
       }
       return (
-        <Badge
-          variant="error"
-          icon={<XCircle size={13} />}
-          label={isExpired ? 'Expired' : 'Cancelled'}
-        />
+        <HStack gap={2} vAlign="center">
+          <StatusDot variant="error" label={isExpired ? 'Order expired' : 'Order cancelled'} />
+          <Text size="sm" color="secondary">
+            {isExpired ? 'Expired' : 'Cancelled'}
+          </Text>
+        </HStack>
       );
     },
-    [getRemainingSeconds]
+    [classifyOrder]
   );
 
   const columns: TableColumn<PaymentHistory>[] = useMemo(
     () => [
       {
         key: 'orderCode',
-        header: 'Order Code',
-        width: proportional(1.2, { minWidth: 140 }),
+        header: 'Order',
+        width: proportional(1.4, { minWidth: 160 }),
         renderCell: (txn) => (
-          <Text type="code" weight="semibold">
-            TXN-{txn.orderCode}
-          </Text>
+          <VStack gap={0.5}>
+            <Text type="code" weight="semibold" hasTabularNumbers>
+              TXN-{txn.orderCode}
+            </Text>
+            <Timestamp value={txn.createdAt} format="date_time" size="2xs" color="secondary" />
+          </VStack>
         ),
-      },
-      {
-        key: 'createdAt',
-        header: 'Date',
-        width: proportional(1.2, { minWidth: 150 }),
-        sortable: true,
-        renderCell: (txn) => <Timestamp value={txn.createdAt} format="date_time" />,
       },
       {
         key: 'gemsAmount',
-        header: 'Rewards',
-        width: proportional(1.1, { minWidth: 130 }),
-        sortable: true,
-        renderCell: (txn) => (
-          <HStack gap={1.5} vAlign="center">
-            <Gem size={15} className={styles.gemIcon} aria-hidden="true" />
-            <Text weight="semibold" hasTabularNumbers>
-              {txn.gemsAmount > 0
-                ? `+${txn.gemsAmount.toLocaleString('en-US')} Gems`
-                : 'Pact Package'}
-            </Text>
-          </HStack>
-        ),
+        header: 'Reward',
+        width: proportional(1.3, { minWidth: 150 }),
+        renderCell: (txn) => {
+          const { isCompleted } = classifyOrder(txn);
+          return (
+            <VStack gap={0.5}>
+              <HStack gap={1.5} vAlign="center">
+                <Icon icon={Gem} size="xsm" color="cyan" />
+                <Text weight="semibold" hasTabularNumbers>
+                  {txn.gemsAmount > 0
+                    ? `+${txn.gemsAmount.toLocaleString('en-US')} Gems`
+                    : 'Pact Package'}
+                </Text>
+              </HStack>
+              <Text type="supporting" size="2xs" color="secondary">
+                {isCompleted ? 'Dispatched to In-Game Mail' : 'Awaiting Payment Clearance'}
+              </Text>
+            </VStack>
+          );
+        },
       },
       {
         key: 'amount',
         header: 'Paid Tithe',
         align: 'end',
         width: proportional(1, { minWidth: 120 }),
-        sortable: true,
         renderCell: (txn) => (
-          <Text weight="semibold" hasTabularNumbers className={styles.amountText}>
+          <Text weight="semibold" hasTabularNumbers>
             {txn.amount.toLocaleString('vi-VN')} VND
           </Text>
         ),
@@ -288,217 +302,203 @@ export const HistoryScreen: React.FC = () => {
       {
         key: 'status',
         header: 'Status',
-        width: proportional(1.15, { minWidth: 145 }),
-        renderCell: (txn) => renderStatusBadge(txn),
+        width: proportional(1.1, { minWidth: 140 }),
+        renderCell: (txn) => renderStatus(txn),
       },
       {
         key: 'actions',
         header: 'Actions',
         align: 'end',
-        resizable: false,
-        width: pixel(190),
+        width: proportional(1.4, { minWidth: 180 }),
         renderCell: (txn) => {
-          const statusUpper = txn.status.toUpperCase();
-          const isCompleted = statusUpper === 'CONFIRMED' || statusUpper === 'PAID';
-          const isPending = statusUpper === 'PENDING';
-          const isExpired = isPending && getRemainingSeconds(txn.createdAt) <= 0;
-
-          if (isPending && !isExpired) {
+          const { isActivePending } = classifyOrder(txn);
+          if (!isActivePending) {
             return (
-              <HStack gap={1.5} hAlign="end">
-                {txn.checkoutUrl && (
-                  <Button
-                    label="Pay"
-                    variant="primary"
-                    size="sm"
-                    icon={<ExternalLink size={13} />}
-                    onClick={() => handlePayNow(txn.checkoutUrl)}
-                  />
-                )}
-                <Button
-                  label="Cancel"
-                  variant="destructive"
-                  size="sm"
-                  icon={<XCircle size={13} />}
-                  isLoading={cancellingOrderCode === txn.orderCode}
-                  onClick={() => setConfirmCancelOrderCode(txn.orderCode)}
-                />
-              </HStack>
+              <Text type="supporting" size="xsm" color="secondary">
+                —
+              </Text>
             );
           }
-
           return (
-            <Text type="supporting" size="xsm" color="secondary">
-              {isCompleted ? 'In-game mail sent' : 'Closed'}
-            </Text>
+            <HStack gap={2} hAlign="end" wrap="wrap">
+              {txn.checkoutUrl && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Icon icon={ExternalLink} size="xsm" />}
+                  label="VietQR"
+                  onClick={() => handlePayNow(txn.checkoutUrl)}
+                />
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<Icon icon={XCircle} size="xsm" />}
+                label="Cancel"
+                onClick={() => setCancelTargetOrder(txn.orderCode)}
+              />
+            </HStack>
           );
         },
       },
     ],
-    [cancellingOrderCode, getRemainingSeconds, handlePayNow, renderStatusBadge]
+    [classifyOrder, handlePayNow, renderStatus]
   );
 
   return (
-    <VStack gap={4} width="100%">
-      {/* Top Header & Sync Button */}
-      <HStack hAlign="between" vAlign="center" gap={3} wrap="wrap" width="100%">
-        <VStack gap={0.5}>
+    <VStack gap={5} width="100%">
+      <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3} width="100%">
+        <VStack gap={1}>
           <Heading level={2}>Transaction Records</Heading>
-          <Text type="supporting" size="sm" color="secondary">
+          <Text type="supporting" color="secondary">
             Official payment history and real-time order ledger
           </Text>
         </VStack>
 
         <Button
-          label={isLoading ? 'Syncing...' : 'Sync Records'}
           variant="secondary"
-          size="md"
-          icon={<RefreshCw size={15} className={isLoading ? styles.spinning : ''} />}
-          isDisabled={isLoading}
-          onClick={() => fetchHistory(true)}
+          size="sm"
+          icon={<Icon icon={RefreshCw} size="xsm" />}
+          label={isRefreshing ? 'Syncing...' : 'Sync Records'}
+          isLoading={isRefreshing}
+          isDisabled={isLoading || isRefreshing}
+          onClick={() => fetchHistory(false)}
         />
       </HStack>
 
-      {/* Filter Tabs */}
       <TabList
         value={statusFilter}
-        onChange={(value) => setStatusFilter(value as StatusFilter)}
+        onChange={(val) => setStatusFilter(val as StatusFilter)}
         hasDivider
       >
-        <Tab value="all" label={`All Orders (${history.length})`} />
-        <Tab value="completed" label="Completed" />
-        <Tab value="pending" label="Pending Payment" />
-        <Tab value="cancelled" label="Cancelled / Expired" />
+        <Tab
+          value="all"
+          label="All Orders"
+          endContent={<Badge label={counts.all} />}
+        />
+        <Tab
+          value="completed"
+          label="Completed"
+          endContent={counts.completed > 0 ? <Badge label={counts.completed} /> : undefined}
+        />
+        <Tab
+          value="pending"
+          label="Pending Payment"
+          endContent={
+            counts.pending > 0 ? <Badge label={counts.pending} variant="warning" /> : undefined
+          }
+        />
+        <Tab
+          value="cancelled"
+          label="Cancelled / Expired"
+          endContent={counts.cancelled > 0 ? <Badge label={counts.cancelled} /> : undefined}
+        />
       </TabList>
 
-      {/* Content */}
       {isLoading && history.length === 0 ? (
-        <VStack gap={3} width="100%">
-          {[0, 1, 2].map((idx) => (
-            <Skeleton key={idx} width="100%" height={72} radius={3} index={idx} />
-          ))}
-        </VStack>
+        <Card padding={5}>
+          <VStack gap={3}>
+            <Skeleton height={44} />
+            <Skeleton height={44} />
+            <Skeleton height={44} />
+          </VStack>
+        </Card>
       ) : filteredHistory.length === 0 ? (
-        <Card variant="default" padding={6} width="100%">
+        <Card padding={6}>
           <EmptyState
-            icon={<ScrollText size={38} />}
+            icon={<Icon icon={ScrollText} size="lg" color="secondary" />}
             title="No Transactions Found"
-            description="No orders match the selected filter. Visit the Treasury to recharge Gems."
+            description="No orders match the selected filter. Visit the Treasury to acquire Gems."
             actions={
               <Button
-                label="Go to Treasury"
                 variant="primary"
+                label="Go to Treasury"
                 onClick={() => navigate('/profile/topup')}
               />
             }
           />
         </Card>
+      ) : !isMobile ? (
+        <Card padding={0}>
+          <Table
+            data={filteredHistory}
+            columns={columns}
+            idKey="orderCode"
+            density="balanced"
+            dividers="rows"
+            hasHover
+          />
+        </Card>
       ) : (
-        <>
-          {/* Desktop Ledger Table */}
-          <div className={styles.desktopTableWrap}>
-            <Card variant="default" padding={0} width="100%">
-              <Table
-                idKey="orderCode"
-                data={filteredHistory}
-                columns={columns}
-                density="balanced"
-                dividers="rows"
-                hasHover
-                plugins={{ sort: sortPlugin }}
-              />
-            </Card>
-          </div>
-
-          {/* Mobile Responsive Ledger Cards */}
-          <div className={styles.mobileCardsWrap}>
-            <VStack gap={3} width="100%">
-              {filteredHistory.map((txn) => {
-                const isPending = txn.status.toUpperCase() === 'PENDING';
-                const remainingSec = getRemainingSeconds(txn.createdAt);
-                const isExpired = isPending && remainingSec <= 0;
-
-                return (
-                  <Card key={txn.orderCode} variant="default" padding={4} width="100%">
-                    <VStack gap={3}>
-                      <HStack hAlign="between" vAlign="center" gap={2} wrap="wrap">
-                        <Text type="code" weight="semibold">
+        <Card padding={0}>
+          <List hasDividers edge="bleed">
+            {filteredHistory.map((txn) => {
+              const { isActivePending } = classifyOrder(txn);
+              return (
+                <ListItem
+                  key={txn.orderCode}
+                  align="start"
+                  label={
+                    <HStack hAlign="between" vAlign="center" gap={2} width="100%">
+                      <Text weight="semibold" hasTabularNumbers>
+                        {txn.gemsAmount > 0
+                          ? `+${txn.gemsAmount.toLocaleString('en-US')} Gems`
+                          : 'Pact Package'}
+                      </Text>
+                      <Text weight="semibold" hasTabularNumbers>
+                        {txn.amount.toLocaleString('vi-VN')} VND
+                      </Text>
+                    </HStack>
+                  }
+                  description={
+                    <VStack gap={2} width="100%">
+                      <HStack hAlign="between" vAlign="center" wrap="wrap" gap={2} width="100%">
+                        <Text type="code" size="2xs" color="secondary" hasTabularNumbers>
                           TXN-{txn.orderCode}
                         </Text>
-                        {renderStatusBadge(txn)}
+                        <Timestamp value={txn.createdAt} format="date_time" size="2xs" color="secondary" />
                       </HStack>
-
-                      <Divider />
-
-                      <MetadataList columns="single" label={{ position: 'start', width: 100 }}>
-                        <MetadataListItem label="Date">
-                          <Timestamp value={txn.createdAt} format="date_time" />
-                        </MetadataListItem>
-                        <MetadataListItem label="Rewards">
-                          <Text weight="semibold" hasTabularNumbers>
-                            {txn.gemsAmount > 0
-                              ? `+${txn.gemsAmount.toLocaleString('en-US')} Gems`
-                              : 'Pact Package'}
-                          </Text>
-                        </MetadataListItem>
-                        <MetadataListItem label="Paid Tithe">
-                          <Text weight="bold" hasTabularNumbers className={styles.amountText}>
-                            {txn.amount.toLocaleString('vi-VN')} VND
-                          </Text>
-                        </MetadataListItem>
-                      </MetadataList>
-
-                      {isPending && !isExpired && (
-                        <>
-                          <Divider />
-                          <HStack gap={2} wrap="wrap">
-                            {txn.checkoutUrl && (
-                              <Button
-                                label="Pay with VietQR"
-                                variant="primary"
-                                size="sm"
-                                icon={<ExternalLink size={14} />}
-                                onClick={() => handlePayNow(txn.checkoutUrl)}
-                              />
-                            )}
+                      {renderStatus(txn)}
+                      {isActivePending && (
+                        <HStack gap={2} wrap="wrap">
+                          {txn.checkoutUrl && (
                             <Button
-                              label="Cancel Order"
-                              variant="destructive"
+                              variant="primary"
                               size="sm"
-                              icon={<XCircle size={14} />}
-                              isLoading={cancellingOrderCode === txn.orderCode}
-                              onClick={() => setConfirmCancelOrderCode(txn.orderCode)}
+                              icon={<Icon icon={ExternalLink} size="xsm" />}
+                              label="Pay with VietQR"
+                              onClick={() => handlePayNow(txn.checkoutUrl)}
                             />
-                          </HStack>
-                        </>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={<Icon icon={XCircle} size="xsm" />}
+                            label="Cancel Order"
+                            onClick={() => setCancelTargetOrder(txn.orderCode)}
+                          />
+                        </HStack>
                       )}
                     </VStack>
-                  </Card>
-                );
-              })}
-            </VStack>
-          </div>
-        </>
+                  }
+                />
+              );
+            })}
+          </List>
+        </Card>
       )}
 
-      {/* Confirm Order Cancellation */}
       <AlertDialog
-        isOpen={Boolean(confirmCancelOrderCode)}
+        isOpen={Boolean(cancelTargetOrder)}
         onOpenChange={(open) => {
-          if (!open && !cancellingOrderCode) {
-            setConfirmCancelOrderCode(null);
-          }
+          if (!open && !isCancelling) setCancelTargetOrder(null);
         }}
-        title={
-          confirmCancelOrderCode
-            ? `Cancel order TXN-${confirmCancelOrderCode}?`
-            : 'Cancel pending order?'
-        }
-        description="Cancelling this pending PayOS order voids its payment link immediately. No currency will be deducted."
-        cancelLabel="Keep Order"
+        title="Cancel Pending Order?"
+        description={`Are you sure you want to cancel pending order TXN-${cancelTargetOrder ?? ''}? The PayOS VietQR link will be invalidated immediately.`}
         actionLabel="Cancel Order"
+        cancelLabel="Keep Order"
         actionVariant="destructive"
-        isActionLoading={Boolean(cancellingOrderCode)}
+        isActionLoading={isCancelling}
         onAction={handleConfirmCancelOrder}
       />
     </VStack>
