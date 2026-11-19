@@ -23,6 +23,7 @@ import { Text } from '@astryxdesign/core/Text';
 import { useToast } from '@astryxdesign/core/Toast';
 import { apiClient } from '../../core/network/apiClient';
 import { useSyncStore } from '../../store/syncStore';
+import { useTranslation } from '../../core/i18n';
 
 interface PaymentHistory extends Record<string, unknown> {
   orderCode: string;
@@ -56,6 +57,7 @@ const formatTxnTime = (dateStr?: string): string => {
 export const HistoryScreen: React.FC = () => {
   const navigate = useNavigate();
   const showToast = useToast();
+  const { t, isVietnamese } = useTranslation();
 
   const [history, setHistory] = useState<PaymentHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -235,7 +237,7 @@ export const HistoryScreen: React.FC = () => {
           <HStack gap={2} vAlign="center">
             <StatusDot variant="success" label="Order delivered" />
             <Text size="sm" weight="medium">
-              Delivered
+              {t('history.delivered')}
             </Text>
           </HStack>
         );
@@ -245,7 +247,7 @@ export const HistoryScreen: React.FC = () => {
           <HStack gap={2} vAlign="center">
             <StatusDot variant="warning" label="Payment pending" isPulsing />
             <Text size="sm" weight="medium" hasTabularNumbers>
-              Pending ({formatCountdown(remainingSec)})
+              {t('history.statusPending')} ({formatCountdown(remainingSec)})
             </Text>
           </HStack>
         );
@@ -254,19 +256,19 @@ export const HistoryScreen: React.FC = () => {
         <HStack gap={2} vAlign="center">
           <StatusDot variant="error" label={isExpired ? 'Order expired' : 'Order cancelled'} />
           <Text size="sm" color="secondary">
-            {isExpired ? 'Expired' : 'Cancelled'}
+            {isExpired ? t('history.statusExpired') : t('history.statusCancelled')}
           </Text>
         </HStack>
       );
     },
-    [classifyOrder]
+    [classifyOrder, t]
   );
 
   const columns: TableColumn<PaymentHistory>[] = useMemo(
     () => [
       {
         key: 'orderCode',
-        header: 'Order',
+        header: t('history.order'),
         width: proportional(1.4, { minWidth: 160 }),
         renderCell: (txn) => (
           <VStack gap={0.5}>
@@ -281,7 +283,7 @@ export const HistoryScreen: React.FC = () => {
       },
       {
         key: 'gemsAmount',
-        header: 'Reward',
+        header: t('history.reward'),
         width: proportional(1.3, { minWidth: 150 }),
         renderCell: (txn) => {
           const { isCompleted } = classifyOrder(txn);
@@ -291,12 +293,12 @@ export const HistoryScreen: React.FC = () => {
                 <Gem size={14} aria-hidden="true" />
                 <Text weight="semibold" hasTabularNumbers>
                   {txn.gemsAmount > 0
-                    ? `+${txn.gemsAmount.toLocaleString('en-US')} Gems`
-                    : 'Pact Package'}
+                    ? `+${txn.gemsAmount.toLocaleString('en-US')} Gem`
+                    : (isVietnamese ? 'Gói Khế Ước' : 'Pact Package')}
                 </Text>
               </HStack>
               <Text type="supporting" size="2xs" color="secondary">
-                {isCompleted ? 'Dispatched to In-Game Mail' : 'Awaiting Payment Clearance'}
+                {isCompleted ? t('history.dispatchedToMail') : t('history.awaitingClearance')}
               </Text>
             </VStack>
           );
@@ -304,7 +306,7 @@ export const HistoryScreen: React.FC = () => {
       },
       {
         key: 'amount',
-        header: 'Paid Tithe',
+        header: t('history.paidTithe'),
         align: 'end',
         width: proportional(1, { minWidth: 120 }),
         renderCell: (txn) => (
@@ -315,13 +317,13 @@ export const HistoryScreen: React.FC = () => {
       },
       {
         key: 'status',
-        header: 'Status',
+        header: t('history.status'),
         width: proportional(1.1, { minWidth: 140 }),
         renderCell: (txn) => renderStatus(txn),
       },
       {
         key: 'actions',
-        header: 'Actions',
+        header: t('history.actions'),
         align: 'end',
         width: proportional(1.4, { minWidth: 180 }),
         renderCell: (txn) => {
@@ -348,7 +350,7 @@ export const HistoryScreen: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 icon={<XCircle size={14} aria-hidden="true" />}
-                label="Cancel"
+                label={t('history.cancelOrder')}
                 onClick={() => setCancelTargetOrder(txn.orderCode)}
               />
             </HStack>
@@ -356,16 +358,16 @@ export const HistoryScreen: React.FC = () => {
         },
       },
     ],
-    [classifyOrder, handlePayNow, renderStatus]
+    [classifyOrder, handlePayNow, isVietnamese, renderStatus, t]
   );
 
   return (
     <VStack gap={5}>
       <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
         <VStack gap={1}>
-          <Heading level={2}>Transaction Records</Heading>
+          <Heading level={2}>{t('history.title')}</Heading>
           <Text type="supporting" color="secondary">
-            Official payment history and real-time order ledger
+            {t('history.subtitle')}
           </Text>
         </VStack>
 
@@ -373,7 +375,7 @@ export const HistoryScreen: React.FC = () => {
           variant="secondary"
           size="sm"
           icon={<RefreshCw size={14} aria-hidden="true" />}
-          label={isRefreshing ? 'Syncing...' : 'Sync Records'}
+          label={isRefreshing ? t('history.syncing') : t('history.syncRecords')}
           isLoading={isRefreshing}
           isDisabled={isLoading || isRefreshing}
           onClick={() => fetchHistory(false)}
@@ -387,24 +389,24 @@ export const HistoryScreen: React.FC = () => {
       >
         <Tab
           value="all"
-          label="All Orders"
+          label={t('history.tabAll')}
           endContent={<Badge label={counts.all} />}
         />
         <Tab
           value="completed"
-          label="Completed"
+          label={t('history.tabCompleted')}
           endContent={counts.completed > 0 ? <Badge label={counts.completed} /> : undefined}
         />
         <Tab
           value="pending"
-          label="Pending Payment"
+          label={t('history.tabPending')}
           endContent={
             counts.pending > 0 ? <Badge label={counts.pending} variant="warning" /> : undefined
           }
         />
         <Tab
           value="cancelled"
-          label="Cancelled / Expired"
+          label={t('history.tabCancelled')}
           endContent={counts.cancelled > 0 ? <Badge label={counts.cancelled} /> : undefined}
         />
       </TabList>
@@ -421,12 +423,12 @@ export const HistoryScreen: React.FC = () => {
         <Card padding={6}>
           <EmptyState
             icon={<ScrollText size={32} aria-hidden="true" />}
-            title="No Transactions Found"
-            description="No orders match the selected filter. Visit the Treasury to acquire Gems."
+            title={t('history.emptyTitle')}
+            description={t('history.emptyDesc')}
             actions={
               <Button
                 variant="primary"
-                label="Go to Treasury"
+                label={t('history.goToTreasury')}
                 onClick={() => navigate('/profile/topup')}
               />
             }
@@ -457,8 +459,8 @@ export const HistoryScreen: React.FC = () => {
                       <HStack hAlign="between" vAlign="center" gap={2}>
                         <Text weight="semibold" hasTabularNumbers>
                           {txn.gemsAmount > 0
-                            ? `+${txn.gemsAmount.toLocaleString('en-US')} Gems`
-                            : 'Pact Package'}
+                            ? `+${txn.gemsAmount.toLocaleString('en-US')} Gem`
+                            : (isVietnamese ? 'Gói Khế Ước' : 'Pact Package')}
                         </Text>
                         <Text weight="semibold" hasTabularNumbers>
                           {txn.amount.toLocaleString('vi-VN')} VND
@@ -483,7 +485,7 @@ export const HistoryScreen: React.FC = () => {
                                 variant="primary"
                                 size="sm"
                                 icon={<ExternalLink size={14} aria-hidden="true" />}
-                                label="Pay with VietQR"
+                                label="VietQR"
                                 onClick={() => handlePayNow(txn.checkoutUrl)}
                               />
                             )}
@@ -491,7 +493,7 @@ export const HistoryScreen: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               icon={<XCircle size={14} aria-hidden="true" />}
-                              label="Cancel Order"
+                              label={t('history.cancelOrder')}
                               onClick={() => setCancelTargetOrder(txn.orderCode)}
                             />
                           </HStack>
@@ -511,10 +513,14 @@ export const HistoryScreen: React.FC = () => {
         onOpenChange={(open) => {
           if (!open && !isCancelling) setCancelTargetOrder(null);
         }}
-        title="Cancel Pending Order?"
-        description={`Are you sure you want to cancel pending order TXN-${cancelTargetOrder ?? ''}? The PayOS VietQR link will be invalidated immediately.`}
-        actionLabel="Cancel Order"
-        cancelLabel="Keep Order"
+        title={t('history.cancelConfirmTitle')}
+        description={
+          isVietnamese
+            ? `Bạn có chắc chắn muốn hủy đơn hàng TXN-${cancelTargetOrder ?? ''}? Mã thanh toán PayOS VietQR sẽ bị vô hiệu hóa ngay lập tức.`
+            : `Are you sure you want to cancel pending order TXN-${cancelTargetOrder ?? ''}? The PayOS VietQR link will be invalidated immediately.`
+        }
+        actionLabel={t('history.cancelOrder')}
+        cancelLabel={t('history.keepOrder')}
         actionVariant="destructive"
         isActionLoading={isCancelling}
         onAction={handleConfirmCancelOrder}

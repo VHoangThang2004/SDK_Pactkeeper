@@ -41,6 +41,7 @@ import { Text } from '@astryxdesign/core/Text';
 import { Token, type TokenColor } from '@astryxdesign/core/Token';
 import { useAuthStore } from '../../store/authStore';
 import { useSyncStore } from '../../store/syncStore';
+import { useTranslation, type TranslationKey } from '../../core/i18n';
 import { GemArt } from '../../components/GameIcons/GemArt';
 import { apiClient } from '../../core/network/apiClient';
 
@@ -96,28 +97,35 @@ const hasVisibleInclusionNames = (pack: TopUpPack): boolean =>
       (pack.unitNames && pack.unitNames.length > 0)
   );
 
-const getPackTierToken = (pack: TopUpPack): { label: string; color: TokenColor } => {
+const getPackTierToken = (
+  pack: TopUpPack,
+  t: (k: TranslationKey) => string
+): { label: string; color: TokenColor } => {
   if (hasPackInclusions(pack)) {
-    return { label: 'Bundle Included', color: 'green' };
+    return { label: t('topup.bundleIncluded'), color: 'green' };
   }
   if (pack.gemsAmount >= 1000) {
-    return { label: 'High Tier', color: 'yellow' };
+    return { label: t('topup.highTier'), color: 'yellow' };
   }
-  return { label: 'Official Pack', color: 'gray' };
+  return { label: t('topup.officialPack'), color: 'gray' };
 };
 
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'gems-desc';
 
-const sortLabels: Record<SortOption, string> = {
-  default: 'Default Order',
-  'price-asc': 'Price: Low to High',
-  'price-desc': 'Price: High to Low',
-  'gems-desc': 'Most Gems First',
-};
-
 export const TopUpScreen: React.FC = () => {
   const { isLoggedIn, username, playerId, openAuthPrompt, setPendingRedirect } = useAuthStore();
+  const { t, isVietnamese } = useTranslation();
   const navigate = useNavigate();
+
+  const sortLabels = useMemo<Record<SortOption, string>>(
+    () => ({
+      default: t('topup.sortDefault'),
+      'price-asc': t('topup.sortPriceAsc'),
+      'price-desc': t('topup.sortPriceDesc'),
+      'gems-desc': t('topup.sortGemsDesc'),
+    }),
+    [t]
+  );
 
   const [profile, setProfile] = useState<PlayerProfile>({
     playerId: playerId || '',
@@ -320,14 +328,14 @@ export const TopUpScreen: React.FC = () => {
                     <HStack gap={1} vAlign="center">
                       <StatusDot variant="success" label="Verified" />
                       <Text type="supporting" size="sm" color="secondary">
-                        Target Account Verified · Official Server
+                        {isVietnamese ? 'Tài Khoản Đã Xác Thực · Máy Chủ Chính Thức' : 'Target Account Verified · Official Server'}
                       </Text>
                     </HStack>
                   </HStack>
 
                   <HStack gap={2} vAlign="center" wrap="wrap">
                     <Text type="code" size="sm" color="secondary" weight="semibold">
-                      Player ID: {profile.playerId || playerId || 'N/A'}
+                      {isVietnamese ? 'ID Người Chơi' : 'Player ID'}: {profile.playerId || playerId || 'N/A'}
                     </Text>
                     <HStack gap={1.5} vAlign="center">
                       <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
@@ -357,7 +365,7 @@ export const TopUpScreen: React.FC = () => {
                 <Card variant="muted" padding={4}>
                   <VStack gap={1}>
                     <Text type="supporting" size="base" color="secondary" weight="bold">
-                      CURRENT GEMS
+                      {isVietnamese ? 'GEM HIỆN CÓ' : 'CURRENT GEMS'}
                     </Text>
                     <HStack gap={2} vAlign="center">
                       <Icon icon={Gem} size="lg" color="accent" />
@@ -371,7 +379,7 @@ export const TopUpScreen: React.FC = () => {
                 <Card variant="muted" padding={4}>
                   <VStack gap={1}>
                     <Text type="supporting" size="base" color="secondary" weight="bold">
-                      VAULT GOLD
+                      {isVietnamese ? 'VÀNG NGÂN KHỐ' : 'VAULT GOLD'}
                     </Text>
                     <HStack gap={2} vAlign="center">
                       <Icon icon={Coins} size="lg" color="accent" />
@@ -389,7 +397,7 @@ export const TopUpScreen: React.FC = () => {
             <HStack gap={2} vAlign="center">
               <Icon icon={ShieldCheck} size="md" color="accent" />
               <Text type="supporting" size="base" color="secondary">
-                Purchases are credited directly via in-game inventory and mailbox upon PayOS verification.
+                {t('topup.heroEventNotice')}
               </Text>
             </HStack>
           </VStack>
@@ -401,22 +409,22 @@ export const TopUpScreen: React.FC = () => {
               <Avatar size="xl" name="Guest" />
               <VStack gap={1.5}>
                 <HStack gap={2} vAlign="center" wrap="wrap">
-                  <Heading level={2} weight="bold">Guest Explorer</Heading>
+                  <Heading level={2} weight="bold">{t('topup.guestExplorer')}</Heading>
                   <Token
                     color="yellow"
                     size="md"
                     icon={<Icon icon={Lock} size="xsm" />}
-                    label="Guest Access"
+                    label={isVietnamese ? 'Quyền Khách' : 'Guest Access'}
                   />
                 </HStack>
                 <Text type="body" size="base" color="secondary" display="block">
-                  Sign in to verify your target Player ID and view your live Gems &amp; Vault Gold balance.
+                  {t('topup.guestExplorerDesc')}
                 </Text>
               </VStack>
             </HStack>
 
             <Button
-              label="Sign In to Top Up"
+              label={t('topup.signInToTopUp')}
               variant="primary"
               size="lg"
               icon={<Icon icon={LogIn} size="sm" />}
@@ -474,19 +482,19 @@ export const TopUpScreen: React.FC = () => {
         >
           <Tab
             value="all"
-            label="All Packages"
+            label={t('topup.allPackages')}
             icon={<Icon icon={Layers} size="sm" />}
             endContent={<Badge variant="neutral" label={packs.length} />}
           />
           <Tab
             value="gems"
-            label="Pure Gem Packs"
+            label={t('topup.pureGems')}
             icon={<Icon icon={Gem} size="sm" />}
             endContent={<Badge variant="neutral" label={pureGemCount} />}
           />
           <Tab
             value="bundles"
-            label="Hero & Weapon Bundles"
+            label={t('topup.heroBundles')}
             icon={<Icon icon={Sword} size="sm" />}
             endContent={<Badge variant="neutral" label={bundleCount} />}
           />
@@ -529,19 +537,19 @@ export const TopUpScreen: React.FC = () => {
         <Card variant="default" padding={6} width="100%">
           <EmptyState
             icon={<Icon icon={AlertCircle} size="lg" color="accent" />}
-            title="Catalog Temporarily Unavailable"
+            title={isVietnamese ? 'Danh Mục Tạm Thời Không Khả Dụng' : 'Catalog Temporarily Unavailable'}
             description={loadError}
             actions={
               <HStack gap={2} hAlign="center" wrap="wrap">
                 <Button
-                  label="Retry"
+                  label={t('topup.retry')}
                   variant="secondary"
                   icon={<Icon icon={RefreshCw} size="sm" />}
                   onClick={fetchData}
                 />
                 {!isLoggedIn && (
                   <Button
-                    label="Sign In"
+                    label={t('common.signIn')}
                     variant="primary"
                     icon={<Icon icon={LogIn} size="sm" />}
                     onClick={handleGuestSignIn}
@@ -555,8 +563,8 @@ export const TopUpScreen: React.FC = () => {
         <Card variant="default" padding={6} width="100%">
           <EmptyState
             icon={<Icon icon={PackageCheck} size="lg" color="accent" />}
-            title="No Packages Found in this Category"
-            description="Please check other categories or contact an Administrator."
+            title={t('topup.emptyCategoryTitle')}
+            description={t('topup.emptyCategoryDesc')}
           />
         </Card>
       ) : (
@@ -569,7 +577,7 @@ export const TopUpScreen: React.FC = () => {
           {sortedPacks.map((pkg) => {
             const isBundle = hasPackInclusions(pkg);
             const hasNamedInclusions = hasVisibleInclusionNames(pkg);
-            const tierToken = getPackTierToken(pkg);
+            const tierToken = getPackTierToken(pkg, t);
 
             return (
               <Card key={pkg.id} variant="default" padding={5} height="100%" className="packCard">
@@ -664,8 +672,8 @@ export const TopUpScreen: React.FC = () => {
                       }
                       tooltip={
                         isLoggedIn
-                          ? 'Review Package & Checkout'
-                          : 'Sign in required to purchase this package'
+                          ? (isVietnamese ? 'Xem Chi Tiết & Nạp Thẻ' : 'Review Package & Checkout')
+                          : (isVietnamese ? 'Cần đăng nhập để mua gói này' : 'Sign in required to purchase this package')
                       }
                       onClick={() => setSelectedPackForDrawer(pkg)}
                     />
@@ -685,8 +693,8 @@ export const TopUpScreen: React.FC = () => {
         }}
         label={
           selectedPackForDrawer
-            ? `Order: ${selectedPackForDrawer.name}`
-            : 'Order Summary'
+            ? `${isVietnamese ? 'Đơn hàng' : 'Order'}: ${selectedPackForDrawer.name}`
+            : (isVietnamese ? 'Tóm Tắt Đơn Hàng' : 'Order Summary')
         }
         side="end"
         width={420}
@@ -697,13 +705,13 @@ export const TopUpScreen: React.FC = () => {
             <HStack hAlign="between" vAlign="center" width="100%">
               <VStack gap={0.5}>
                 <Text type="supporting" size="2xs" color="secondary">
-                  ORDER PREVIEW
+                  {isVietnamese ? 'XEM TRƯỚC ĐƠN HÀNG' : 'ORDER PREVIEW'}
                 </Text>
                 <Heading level={2}>{selectedPackForDrawer.name}</Heading>
               </VStack>
               <Token
-                color={getPackTierToken(selectedPackForDrawer).color}
-                label={getPackTierToken(selectedPackForDrawer).label}
+                color={getPackTierToken(selectedPackForDrawer, t).color}
+                label={getPackTierToken(selectedPackForDrawer, t).label}
               />
             </HStack>
 
@@ -719,11 +727,11 @@ export const TopUpScreen: React.FC = () => {
                   <HStack gap={1.5} vAlign="center">
                     <Icon icon={Gem} size="sm" color="accent" />
                     <Text type="large" weight="bold" hasTabularNumbers>
-                      +{selectedPackForDrawer.gemsAmount.toLocaleString('en-US')} Gems
+                      +{selectedPackForDrawer.gemsAmount.toLocaleString('en-US')} Gem
                     </Text>
                   </HStack>
                   <Text type="supporting" size="sm" color="secondary">
-                    Direct credit to in-game Vault
+                    {isVietnamese ? 'Cộng thẳng vào Ngân Khố trong game' : 'Direct credit to in-game Vault'}
                   </Text>
                 </VStack>
               </HStack>
@@ -733,7 +741,7 @@ export const TopUpScreen: React.FC = () => {
             {hasPackInclusions(selectedPackForDrawer) && (
               <VStack gap={2} width="100%">
                 <Text type="supporting" size="sm" color="secondary">
-                  Included Bonus Items:
+                  {t('topup.includedPactItems')}
                 </Text>
                 <HStack gap={1.5} wrap="wrap">
                   {selectedPackForDrawer.unitNames?.map((u, i) => (
@@ -771,7 +779,7 @@ export const TopUpScreen: React.FC = () => {
             <Card variant="default" padding={3} width="100%">
               <VStack gap={2} width="100%">
                 <Text type="supporting" size="2xs" color="secondary">
-                  DELIVERY RECIPIENT
+                  {isVietnamese ? 'NHÂN VẬT THỤ HƯỞNG' : 'DELIVERY RECIPIENT'}
                 </Text>
                 {isLoggedIn ? (
                   <HStack hAlign="between" vAlign="center" width="100%">
@@ -791,8 +799,12 @@ export const TopUpScreen: React.FC = () => {
                 ) : (
                   <Banner
                     status="warning"
-                    title="Guest Mode"
-                    description="Sign in is required before checkout to deliver rewards directly to your Player ID."
+                    title={isVietnamese ? 'Chế Độ Khách' : 'Guest Mode'}
+                    description={
+                      isVietnamese
+                        ? 'Cần đăng nhập trước khi thanh toán để cộng phần thưởng vào đúng UID của bạn.'
+                        : 'Sign in is required before checkout to deliver rewards directly to your Player ID.'
+                    }
                   />
                 )}
               </VStack>
@@ -802,7 +814,7 @@ export const TopUpScreen: React.FC = () => {
             <VStack gap={3} width="100%">
               <HStack hAlign="between" vAlign="center" width="100%">
                 <Text color="secondary" size="base">
-                  Total Price
+                  {isVietnamese ? 'Tổng Tiền' : 'Total Price'}
                 </Text>
                 <Heading level={2}>
                   {selectedPackForDrawer.priceVnd.toLocaleString('vi-VN')} VND
@@ -812,7 +824,9 @@ export const TopUpScreen: React.FC = () => {
               <HStack gap={2} vAlign="start">
                 <Icon icon={ShieldCheck} size="sm" color="accent" />
                 <Text type="supporting" size="2xs" color="secondary">
-                  Official PayOS VietQR Gateway · 0 VND fee · Instant 3-15s in-game credit
+                  {isVietnamese
+                    ? 'Cổng PayOS VietQR Chính Thức · Miễn phí 0đ · Chuyển vào game 3-15s'
+                    : 'Official PayOS VietQR Gateway · 0 VND fee · Instant 3-15s in-game credit'}
                 </Text>
               </HStack>
             </VStack>
@@ -824,8 +838,10 @@ export const TopUpScreen: React.FC = () => {
               <Button
                 label={
                   isLoggedIn
-                    ? `Proceed to PayOS Checkout (${selectedPackForDrawer.priceVnd.toLocaleString('vi-VN')} VND)`
-                    : 'Sign In to Purchase'
+                    ? (isVietnamese
+                        ? `Tiến Hành Thanh Toán PayOS (${selectedPackForDrawer.priceVnd.toLocaleString('vi-VN')} VND)`
+                        : `Proceed to PayOS Checkout (${selectedPackForDrawer.priceVnd.toLocaleString('vi-VN')} VND)`)
+                    : t('topup.signInToTopUp')
                 }
                 variant="primary"
                 size="lg"
@@ -839,7 +855,7 @@ export const TopUpScreen: React.FC = () => {
               />
 
               <Button
-                label="Close & Keep Browsing"
+                label={isVietnamese ? 'Đóng & Tiếp Tục Xem' : 'Close & Keep Browsing'}
                 variant="ghost"
                 width="100%"
                 onClick={() => setSelectedPackForDrawer(null)}
