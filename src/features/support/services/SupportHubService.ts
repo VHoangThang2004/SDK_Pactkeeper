@@ -45,9 +45,19 @@ export class SupportHubService {
     this.connectPromise = (async () => {
       try {
         if (!this.hubConnection) {
+          // Vercel Rewrites do not proxy WebSocket upgrades; use SSE/LongPolling on relative prod URLs
+          const useProxySafeTransports = !import.meta.env.DEV && !ApiConfig.baseUrl;
+
           this.hubConnection = new signalR.HubConnectionBuilder()
             .withUrl(`${ApiConfig.baseUrl}/hubs/support`, {
               accessTokenFactory: () => StorageService.getToken() || '',
+              ...(useProxySafeTransports
+                ? {
+                    transport:
+                      signalR.HttpTransportType.ServerSentEvents |
+                      signalR.HttpTransportType.LongPolling,
+                  }
+                : {}),
             })
             .withAutomaticReconnect([0, 1000, 2000, 5000, 10000, 15000])
             .build();
