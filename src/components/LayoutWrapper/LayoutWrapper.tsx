@@ -383,14 +383,14 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   return (
     <>
       <AppShell variant="wash" height="auto" contentPadding={0} topNav={topNav}>
-        <VStack gap={6} width="100%">
+        <VStack gap={6} width="100%" className="pageMotionWrap">
           {children}
 
           <Section variant="section" dividers={['top']} padding={6} width="100%">
             <VStack gap={5} width="100%">
               <Grid columns={{ minWidth: 240, max: 3, repeat: 'fit' }} gap={4} width="100%">
                 {trustPillars.map((pillar) => (
-                  <Card key={pillar.title} variant="default" padding={4}>
+                  <Card key={pillar.title} variant="default" padding={4} className="interactiveCard">
                     <HStack gap={3} vAlign="start">
                       <Icon icon={pillar.icon} size="lg" color="accent" />
                       <VStack gap={1}>

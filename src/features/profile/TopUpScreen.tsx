@@ -323,7 +323,7 @@ export const TopUpScreen: React.FC = () => {
               </HStack>
 
               <HStack gap={3} wrap="wrap">
-                <Card variant="muted" padding={4}>
+                <Card variant="muted" padding={4} className="interactiveCard">
                   <VStack gap={1}>
                     <Text type="supporting" size="base" color="secondary" weight="bold">
                       {t('topup.currentGems')}
@@ -337,7 +337,7 @@ export const TopUpScreen: React.FC = () => {
                   </VStack>
                 </Card>
 
-                <Card variant="muted" padding={4}>
+                <Card variant="muted" padding={4} className="interactiveCard">
                   <VStack gap={1}>
                     <Text type="supporting" size="base" color="secondary" weight="bold">
                       {t('topup.vaultGold')}
@@ -397,7 +397,7 @@ export const TopUpScreen: React.FC = () => {
 
       {/* 2. Top-Up Conversion Hero Banner with Direct CTAs */}
       {featuredPack && (
-        <Section variant="section" padding={5} width="100%">
+        <Section variant="section" padding={5} width="100%" className="heroPromoSurface">
           <HStack hAlign="between" vAlign="center" gap={6} wrap="wrap" width="100%">
             <VStack gap={3} className="heroCopy">
               <HStack gap={2} wrap="wrap">
@@ -426,7 +426,7 @@ export const TopUpScreen: React.FC = () => {
                 {t('topup.promoDesc')}
               </Text>
 
-              <HStack gap={2} wrap="wrap">
+              <HStack gap={2} wrap="wrap" className="primaryCtaWrap">
                 <Button
                   label={t('topup.promoCta')}
                   variant="primary"
@@ -446,7 +446,7 @@ export const TopUpScreen: React.FC = () => {
               </HStack>
             </VStack>
 
-            <Center>
+            <Center className="packGemArt">
               <GemArt gemsAmount={featuredPack.gemsAmount} size={116} />
             </Center>
           </HStack>
@@ -560,14 +560,22 @@ export const TopUpScreen: React.FC = () => {
             const hiddenCount = Math.max(0, allPills.length - MAX_VISIBLE_CARD_PILLS);
             const tierToken = getPackTierToken(pkg, bestValuePackId, t);
 
+            const isBestValue = Boolean(bestValuePackId && pkg.id === bestValuePackId);
+
             return (
-              <Card key={pkg.id} variant="default" padding={5} height="100%" className="packCard">
+              <Card
+                key={pkg.id}
+                variant="default"
+                padding={5}
+                height="100%"
+                className={isBestValue ? 'packCard packCardFeatured' : 'packCard'}
+              >
                 <VStack gap={4} hAlign="center" height="100%" width="100%">
                   <HStack hAlign="end" width="100%">
                     <Token size="md" color={tierToken.color} label={tierToken.label} />
                   </HStack>
 
-                  <Center height={116} width="100%">
+                  <Center height={116} width="100%" className="packGemArt">
                     <GemArt gemsAmount={pkg.gemsAmount} size={92} />
                   </Center>
 

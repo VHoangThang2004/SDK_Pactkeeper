@@ -170,7 +170,7 @@ export const MissivesScreen: React.FC = () => {
     <VStack gap={5} width="100%">
       {/* Overview Stat Cards (Skeleton instead of fake 0 on cold load) */}
       <Grid columns={{ minWidth: 240, max: 3, repeat: 'fit' }} gap={4} width="100%">
-        <Card variant="muted" padding={4}>
+        <Card variant="muted" padding={4} className="interactiveCard">
           <HStack gap={3} vAlign="center">
             <Icon icon={Mail} size="lg" color="accent" />
             <VStack gap={0.5}>
@@ -193,7 +193,7 @@ export const MissivesScreen: React.FC = () => {
           </HStack>
         </Card>
 
-        <Card variant="muted" padding={4}>
+        <Card variant="muted" padding={4} className="interactiveCard">
           <HStack gap={3} vAlign="center">
             <Icon icon={Inbox} size="lg" color="secondary" />
             <VStack gap={0.5}>
@@ -211,7 +211,7 @@ export const MissivesScreen: React.FC = () => {
           </HStack>
         </Card>
 
-        <Card variant="muted" padding={4}>
+        <Card variant="muted" padding={4} className="interactiveCard">
           <HStack gap={3} vAlign="center">
             <Icon icon={Radio} size="lg" color="success" />
             <VStack gap={0.5}>

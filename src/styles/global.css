@@ -4,6 +4,7 @@
   html {
     color-scheme: light dark;
     font-size: 17px;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -40,13 +41,135 @@
 }
 
 @layer product {
-  /* Brand Logo */
+  /* ==========================================================================
+     1. Global Micro-Interaction & Tactile Feedback Layer
+     ========================================================================== */
+  @keyframes pactPageEnter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pactCardReveal {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.99);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .pageMotionWrap {
+    animation: pactPageEnter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Universal smooth hover & tactile active press for all buttons & links */
+  button:not(:disabled),
+  a[href] {
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease,
+      filter 180ms ease,
+      opacity 180ms ease;
+  }
+
+  button:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+
+  button:not(:disabled):active {
+    transform: translateY(0) scale(0.97);
+  }
+
+  /* Primary / Accent CTA glow on hover */
+  button[type='submit']:not(:disabled):hover,
+  .primaryCtaWrap button:not(:disabled):hover,
+  .packCard .cardFooter button:not(:disabled):hover,
+  .summaryCard button:not(:disabled):hover {
+    transform: translateY(-1.5px);
+    filter: brightness(1.06);
+    box-shadow: 0 8px 22px -6px color-mix(in srgb, var(--color-accent) 42%, transparent);
+  }
+
+  button[type='submit']:not(:disabled):active,
+  .primaryCtaWrap button:not(:disabled):active,
+  .packCard .cardFooter button:not(:disabled):active,
+  .summaryCard button:not(:disabled):active {
+    transform: translateY(0) scale(0.97);
+    filter: brightness(0.98);
+    box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--color-accent) 28%, transparent);
+  }
+
+  /* Subtle trailing icon nudge inside buttons */
+  button:not(:disabled) svg {
+    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .packCard .cardFooter button:not(:disabled):hover svg:last-child,
+  .heroPromoSurface button:not(:disabled):hover svg:last-child {
+    transform: translateX(3px);
+  }
+
+  /* Tab hover & indicator smoothness */
+  [role='tab'] {
+    position: relative;
+    transition:
+      color 180ms ease,
+      background-color 180ms ease,
+      transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  [role='tab']:hover {
+    transform: none;
+    color: var(--color-text-primary);
+  }
+
+  [role='tab']:active {
+    transform: scale(0.98);
+  }
+
+  /* Table rows & Collapsible triggers */
+  tbody tr {
+    transition: background-color 160ms ease;
+  }
+
+  tbody tr:hover {
+    background-color: var(--color-overlay-hover);
+  }
+
+  button[aria-expanded]:hover {
+    transform: none;
+    color: var(--color-text-accent);
+  }
+
+  /* ==========================================================================
+     2. Brand Logo & Sticky Glass Navigation Shell
+     ========================================================================== */
   .brandLogoNav {
     width: 2.35rem;
     height: 2.35rem;
     object-fit: contain;
     display: block;
     flex-shrink: 0;
+    transition:
+      transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+      filter 240ms ease;
+  }
+
+  a:hover .brandLogoNav,
+  .brandLogoNav:hover {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--color-accent) 45%, transparent));
   }
 
   .brandLogoLogin {
@@ -54,11 +177,66 @@
     height: 5.5rem;
     object-fit: contain;
     display: block;
+    transition:
+      transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      filter 280ms ease;
   }
 
-  /* Navigation Shell & Breathing Room */
+  .brandLogoLogin:hover {
+    transform: scale(1.05) translateY(-2px);
+    filter: drop-shadow(0 8px 18px color-mix(in srgb, var(--color-accent) 35%, transparent));
+  }
+
+  /* Sticky glassmorphism header */
+  .astryx-app-shell-header,
+  .astryx-app-shell > header,
+  header[role='banner'] {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    background-color: color-mix(in srgb, var(--color-background-surface) 84%, transparent);
+    border-bottom: 1px solid var(--color-border);
+    transition: background-color 220ms ease, border-color 220ms ease;
+  }
+
   .astryx-app-shell-header {
     padding-inline: var(--spacing-6);
+  }
+
+  /* Animated accent underline on desktop nav items */
+  header nav a,
+  header nav button {
+    position: relative;
+  }
+
+  header nav a::after,
+  header nav button::after {
+    content: '';
+    position: absolute;
+    left: var(--spacing-2);
+    right: var(--spacing-2);
+    bottom: 2px;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+
+  header nav a:hover::after,
+  header nav button:hover::after,
+  header nav a[aria-current='page']::after,
+  header nav a[data-selected='true']::after {
+    transform: scaleX(1);
+  }
+
+  header nav a:hover,
+  header nav button:hover {
+    transform: none;
   }
 
   @media (min-width: 1248px) {
@@ -68,7 +246,7 @@
   }
 
   /* Main Content Container with Generous Breathing Room */
-  .astryx-app-shell [role="main"],
+  .astryx-app-shell [role='main'],
   .astryx-app-shell .astryx-layout-content,
   .astryx-layout-content {
     max-width: 1200px !important;
@@ -101,6 +279,55 @@
     }
   }
 
+  /* ==========================================================================
+     3. Interactive Cards, Hero Promo & Stat Tiles
+     ========================================================================== */
+  .interactiveCard {
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 220ms ease,
+      box-shadow 240ms ease;
+  }
+
+  .interactiveCard:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-border-emphasized);
+    box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--color-accent) 22%, transparent);
+  }
+
+  .interactiveCard svg {
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .interactiveCard:hover svg {
+    transform: scale(1.08);
+  }
+
+  .heroPromoSurface {
+    background-image: radial-gradient(
+      ellipse at top right,
+      color-mix(in srgb, var(--color-accent) 12%, transparent),
+      transparent 65%
+    );
+    transition: border-color 240ms ease, box-shadow 240ms ease;
+  }
+
+  .heroPromoSurface:hover {
+    border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-border));
+    box-shadow: 0 12px 30px -16px color-mix(in srgb, var(--color-accent) 26%, transparent);
+  }
+
+  .packGemArt {
+    transition:
+      transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      filter 280ms ease;
+  }
+
+  .heroPromoSurface:hover .packGemArt {
+    transform: scale(1.06) translateY(-2px);
+    filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--color-accent) 30%, transparent));
+  }
+
   /* Checkout Layout */
   .checkoutGrid {
     grid-template-columns: 1fr;
@@ -116,6 +343,11 @@
   .summaryCard {
     position: sticky;
     top: var(--spacing-4);
+    transition: border-color 220ms ease, box-shadow 220ms ease;
+  }
+
+  .summaryCard:hover {
+    border-color: color-mix(in srgb, var(--color-accent) 35%, var(--color-border));
   }
 
   .guaranteeIcon {
@@ -123,7 +355,9 @@
     color: var(--color-positive);
   }
 
-  /* Support Chat & Counsel */
+  /* ==========================================================================
+     4. Support Chat & Counsel
+     ========================================================================== */
   .supportGrid {
     grid-template-columns: 1fr;
     align-items: start;
@@ -150,13 +384,13 @@
   }
 
   /* Improve dark-mode contrast for chat inputs & bubbles */
-  [data-theme="dark"] .chatShell textarea::placeholder,
-  [data-theme="dark"] .chatShell input::placeholder {
+  [data-theme='dark'] .chatShell textarea::placeholder,
+  [data-theme='dark'] .chatShell input::placeholder {
     color: var(--color-text-secondary);
     opacity: 0.9;
   }
 
-  [data-theme="dark"] .chatShell {
+  [data-theme='dark'] .chatShell {
     border: 1px solid var(--color-border-emphasized);
   }
 
@@ -186,9 +420,16 @@
     max-height: 16rem;
     object-fit: cover;
     border-radius: var(--radius-sm);
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* TopUp Storefront Cards & Alignment */
+  .attachmentBtn:hover .attachmentImg {
+    transform: scale(1.04);
+  }
+
+  /* ==========================================================================
+     5. TopUp Storefront Cards & Staggered Reveal
+     ========================================================================== */
   .catalogGrid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -203,12 +444,44 @@
     min-height: 22.5rem;
     position: relative;
     border-radius: var(--radius-lg);
-    transition: transform var(--duration-snappy) var(--ease-move),
-      box-shadow var(--duration-snappy) var(--ease-move);
+    animation: pactCardReveal 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    transition:
+      transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 220ms ease,
+      box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .catalogGrid > :nth-child(2) {
+    animation-delay: 35ms;
+  }
+  .catalogGrid > :nth-child(3) {
+    animation-delay: 70ms;
+  }
+  .catalogGrid > :nth-child(4) {
+    animation-delay: 105ms;
+  }
+  .catalogGrid > :nth-child(n + 5) {
+    animation-delay: 140ms;
+  }
+
+  .packCardFeatured {
+    border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-border));
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-accent) 7%, transparent) 0%,
+      transparent 48%
+    );
   }
 
   .packCard:hover {
-    transform: translateY(-3px);
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--color-accent) 58%, var(--color-border));
+    box-shadow: 0 14px 32px -12px color-mix(in srgb, var(--color-accent) 28%, transparent);
+  }
+
+  .packCard:hover .packGemArt {
+    transform: scale(1.08) translateY(-2px);
+    filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--color-accent) 32%, transparent));
   }
 
   .inclusionsArea {
@@ -232,5 +505,30 @@
 
   .heroCopy {
     max-width: 38rem;
+  }
+
+  /* ==========================================================================
+     6. Accessibility: Respect Reduced Motion
+     ========================================================================== */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+
+    button:not(:disabled):hover,
+    button:not(:disabled):active,
+    .packCard:hover,
+    .interactiveCard:hover,
+    .packCard:hover .packGemArt {
+      transform: none !important;
+    }
   }
 }
