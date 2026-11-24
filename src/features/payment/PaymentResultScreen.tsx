@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle2, XCircle, ScrollText, Gem, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, XCircle, ScrollText, Gem, ShieldCheck, RotateCcw } from 'lucide-react';
 import { Banner } from '@astryxdesign/core/Banner';
 import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
 import { Center } from '@astryxdesign/core/Center';
 import { Divider } from '@astryxdesign/core/Divider';
 import { Heading } from '@astryxdesign/core/Heading';
+import { Icon } from '@astryxdesign/core/Icon';
 import { Link } from '@astryxdesign/core/Link';
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { Spinner } from '@astryxdesign/core/Spinner';
@@ -15,6 +16,11 @@ import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Text } from '@astryxdesign/core/Text';
 import { LayoutWrapper } from '../../components/LayoutWrapper/LayoutWrapper';
 import { useAuthStore } from '../../store/authStore';
+import {
+  clearLastCheckoutPack,
+  readLastCheckoutPack,
+  usePortalDataStore,
+} from '../../store/portalDataStore';
 import { apiClient } from '../../core/network/apiClient';
 import { useTranslation } from '../../core/i18n';
 
@@ -22,15 +28,20 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
   const location = useLocation();
   const navigate = useNavigate();
   const { username, playerId } = useAuthStore();
-  const { t, isVietnamese } = useTranslation();
+  const { t } = useTranslation();
 
   const searchParams = new URLSearchParams(location.search);
   const orderCode = searchParams.get('orderCode');
   const payOsStatus = searchParams.get('status');
 
+  const lastPack = useMemo(() => (isSuccess ? null : readLastCheckoutPack()), [isSuccess]);
   const [isSyncing, setIsSyncing] = useState<boolean>(Boolean(orderCode));
 
   useEffect(() => {
+    if (isSuccess) {
+      clearLastCheckoutPack();
+    }
+
     if (!orderCode) return;
 
     const reconcileOrder = async () => {
@@ -42,6 +53,10 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
         console.warn('Reconciling payment order in background:', err);
       } finally {
         setIsSyncing(false);
+        const store = usePortalDataStore.getState();
+        store.fetchProfile();
+        store.fetchHistory();
+        store.fetchNotifications();
       }
     };
 
@@ -54,26 +69,18 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
         <Card elevation="med" padding={6} maxWidth={560} width="100%">
           <VStack gap={5}>
             <VStack gap={3} hAlign="center">
-              {isSuccess ? (
-                <CheckCircle2
-                  size={56}
-                  style={{ color: 'var(--color-positive)' }}
-                  aria-hidden="true"
-                />
-              ) : (
-                <XCircle
-                  size={56}
-                  style={{ color: 'var(--color-negative)' }}
-                  aria-hidden="true"
-                />
-              )}
+              <Icon
+                icon={isSuccess ? CheckCircle2 : XCircle}
+                size="lg"
+                color={isSuccess ? 'success' : 'error'}
+              />
 
               <Heading level={2}>
                 {isSuccess ? t('paymentResult.successTitle') : t('paymentResult.cancelTitle')}
               </Heading>
 
               <Center>
-                <Text type="supporting" color="secondary">
+                <Text type="supporting" color="secondary" justify="center">
                   {isSuccess
                     ? t('paymentResult.successSubtitle')
                     : t('paymentResult.cancelSubtitle')}
@@ -91,7 +98,7 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
                 <HStack gap={2} vAlign="center">
                   <Spinner size="sm" />
                   <Text type="supporting" size="sm">
-                    {isVietnamese ? 'Vui lòng chờ trong giây lát' : 'Please wait a moment'}
+                    {t('paymentResult.pleaseWait')}
                   </Text>
                 </HStack>
               </Banner>
@@ -108,8 +115,8 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
                   />
                   <Text weight="semibold">
                     {isSuccess
-                      ? (isVietnamese ? 'ĐÃ XÁC NHẬN / HOÀN TẤT' : 'CONFIRMED / PAID')
-                      : (isVietnamese ? 'ĐÃ HỦY' : 'CANCELLED')}
+                      ? t('paymentResult.statusConfirmedLabel')
+                      : t('paymentResult.statusCancelledLabel')}
                   </Text>
                 </HStack>
               </MetadataListItem>
@@ -127,12 +134,12 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
               </MetadataListItem>
 
               <MetadataListItem label={t('common.uid')}>
-                <Text type="code">{playerId || (isVietnamese ? 'Tài khoản hiện tại' : 'Current Account')}</Text>
+                <Text type="code">{playerId || t('common.currentAccount')}</Text>
               </MetadataListItem>
 
               <MetadataListItem
                 label={t('paymentResult.deliveryChannel')}
-                icon={<ShieldCheck size={14} aria-hidden="true" />}
+                icon={<Icon icon={ShieldCheck} size="xsm" />}
               >
                 {t('paymentResult.inGameMailbox')}
               </MetadataListItem>
@@ -141,11 +148,21 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
             <Divider />
 
             <VStack gap={2}>
+              {!isSuccess && lastPack && (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  width="fill"
+                  icon={<Icon icon={RotateCcw} size="sm" />}
+                  label={t('paymentResult.retryPayment', { name: lastPack.name })}
+                  onClick={() => navigate('/checkout', { state: { pack: lastPack } })}
+                />
+              )}
               <Button
-                variant="primary"
+                variant={!isSuccess && lastPack ? 'secondary' : 'primary'}
                 size="lg"
                 width="fill"
-                icon={<Gem size={16} aria-hidden="true" />}
+                icon={<Icon icon={Gem} size="sm" />}
                 label={t('paymentResult.returnToTreasury')}
                 onClick={() => navigate('/profile/topup')}
               />
@@ -153,7 +170,7 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
                 variant="secondary"
                 size="md"
                 width="fill"
-                icon={<ScrollText size={16} aria-hidden="true" />}
+                icon={<Icon icon={ScrollText} size="sm" />}
                 label={t('paymentResult.viewLedgerHistory')}
                 onClick={() => navigate('/profile/history')}
               />

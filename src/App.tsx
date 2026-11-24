@@ -10,6 +10,7 @@ import {
 import { LinkProvider } from '@astryxdesign/core/Link';
 import { RouterLinkAdapter } from './components/RouterLinkAdapter';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ScrollToTop } from './components/ScrollToTop';
 import { useAuthStore } from './store/authStore';
 import { LoginScreen } from './features/auth/LoginScreen';
 import { ProfileScreen } from './features/profile/ProfileScreen';
@@ -57,6 +58,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <LinkProvider component={RouterLinkAdapter}>
         <ErrorBoundary>
           <Routes>

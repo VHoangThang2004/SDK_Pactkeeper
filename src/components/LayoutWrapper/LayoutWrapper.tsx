@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Gem,
   ShieldCheck,
   Zap,
   Headphones,
@@ -30,7 +29,6 @@ import { Icon } from '@astryxdesign/core/Icon';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { HStack, VStack } from '@astryxdesign/core/Layout';
 import { MobileNav } from '@astryxdesign/core/MobileNav';
-import { NavIcon } from '@astryxdesign/core/NavIcon';
 import { Section } from '@astryxdesign/core/Section';
 import { SideNavItem, SideNavSection } from '@astryxdesign/core/SideNav';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
@@ -40,6 +38,7 @@ import { Token } from '@astryxdesign/core/Token';
 import { TopNav, TopNavHeading, TopNavItem } from '@astryxdesign/core/TopNav';
 import { useThemeMode } from '../../hooks/useThemeMode';
 import { useAuthStore } from '../../store/authStore';
+import { usePortalDataStore } from '../../store/portalDataStore';
 import { useSyncStore } from '../../store/syncStore';
 import { useTranslation } from '../../core/i18n';
 import { usePlayerNavItems } from '../navigation/playerNavItems';
@@ -49,7 +48,7 @@ interface LayoutWrapperProps {
   children: React.ReactNode;
 }
 
-const PAYMENT_CHANNELS = ['VietQR', 'Napas 247', 'PayOS', 'Visa / Master'] as const;
+const PAYMENT_CHANNELS = ['VietQR', 'Napas 247', 'PayOS'] as const;
 
 export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   const { isLoggedIn, username, playerId, logout, openAuthPrompt, setPendingRedirect } =
@@ -187,9 +186,10 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   };
 
   const handleSignOut = () => {
+    usePortalDataStore.getState().clearUserCache();
     logout();
     toast({
-      body: isVietnamese ? 'Bạn đã đăng xuất.' : 'You have been signed out.',
+      body: t('common.signedOutToast'),
       type: 'info',
       uniqueID: 'pactkeeper-signout',
       collisionBehavior: 'overwrite',
@@ -356,21 +356,21 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
 
   const topNav = (
     <TopNav
-      label="Pactkeeper Top-Up Navigation"
+      label={t('common.navigationLabel')}
       heading={
         <HStack gap={2} vAlign="center">
           <IconButton
             className="mobileOnly"
             variant="ghost"
             size="sm"
-            label="Open navigation menu"
+            label={t('common.openMenuLabel')}
             icon={<Icon icon={Menu} size="md" />}
             onClick={() => setIsMobileNavOpen(true)}
           />
           <TopNavHeading
-            logo={<NavIcon icon={<Icon icon={Gem} size="sm" color="accent" />} />}
+            logo={<img src="/logo.png" alt="Pactkeeper Logo" className="brandLogoNav" />}
             heading="PACTKEEPER"
-            superheading="TOP-UP CENTER"
+            superheading={t('common.topUpCenter')}
             headingHref="/profile/topup"
           />
         </HStack>
@@ -412,9 +412,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
                     © 2026 Pactkeeper Team — FPT University SEP490. {t('common.allRightsReserved')}
                   </Text>
                   <Text type="supporting" size="xsm" color="disabled" display="block">
-                    {isVietnamese
-                      ? 'Pactkeeper Web SDK là cổng nạp game chính thức. Vui lòng kiểm tra kỹ UID và Máy Chủ trước khi thực hiện giao dịch.'
-                      : 'Pactkeeper Web SDK is the official game top-up platform. Please confirm your UID and Server before purchase.'}
+                    {t('common.footerDisclaimer')}
                   </Text>
                 </VStack>
 
@@ -437,10 +435,10 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
       <MobileNav
         isOpen={isMobileNavOpen}
         onOpenChange={setIsMobileNavOpen}
-        header="Pactkeeper Portal"
+        header={t('common.portalTitle')}
       >
         <VStack gap={4} width="100%">
-          <SideNavSection title={isVietnamese ? 'Điều hướng' : 'Navigation'}>
+          <SideNavSection title={t('common.navigationSection')}>
             {navItems.map((item) => {
               if (item.requiresAuth && !isLoggedIn) {
                 return (

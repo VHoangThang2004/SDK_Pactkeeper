@@ -5,31 +5,33 @@ import { Heading } from '@astryxdesign/core/Heading';
 import { VStack } from '@astryxdesign/core/Layout';
 import { Text } from '@astryxdesign/core/Text';
 import { LayoutWrapper } from '../../components/LayoutWrapper/LayoutWrapper';
+import { useTranslation } from '../../core/i18n';
 
 export const ProfileScreen: React.FC = () => {
   const location = useLocation();
+  const { t } = useTranslation();
   const isTopUp = location.pathname === '/profile/topup';
 
   const getPageMeta = () => {
     switch (location.pathname) {
       case '/profile/history':
         return {
-          title: 'Treasury Ledger',
-          subtitle: 'Official payment history, active PayOS windows, and delivery status.',
+          title: t('pages.historyTitle'),
+          subtitle: t('pages.historySubtitle'),
         };
       case '/profile/missives':
         return {
-          title: 'Missives & Notices',
-          subtitle: 'Real-time system alerts, tribute confirmations, and counsel replies.',
+          title: t('pages.missivesTitle'),
+          subtitle: t('pages.missivesSubtitle'),
         };
       case '/profile/support':
         return {
-          title: 'Counsel Live Support',
-          subtitle: 'Direct real-time channel with official Pactkeeper Game Masters.',
+          title: t('pages.supportTitle'),
+          subtitle: t('pages.supportSubtitle'),
         };
       default:
         return {
-          title: 'Pactkeeper',
+          title: t('common.appName'),
           subtitle: '',
         };
     }
