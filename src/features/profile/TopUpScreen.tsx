@@ -16,6 +16,12 @@ import {
   LogIn,
   RefreshCw,
   ArrowDownUp,
+  Copy,
+  Check,
+  HelpCircle,
+  QrCode,
+  Zap,
+  UserCheck,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarStatusDot } from '@astryxdesign/core/Avatar';
@@ -24,6 +30,7 @@ import { Banner } from '@astryxdesign/core/Banner';
 import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
 import { Center } from '@astryxdesign/core/Center';
+import { Collapsible, CollapsibleGroup } from '@astryxdesign/core/Collapsible';
 import { Divider } from '@astryxdesign/core/Divider';
 import { Drawer } from '@astryxdesign/core/Drawer';
 import { DropdownMenu } from '@astryxdesign/core/DropdownMenu';
@@ -38,6 +45,7 @@ import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
 import { Text } from '@astryxdesign/core/Text';
+import { useToast } from '@astryxdesign/core/Toast';
 import { Token, type TokenColor } from '@astryxdesign/core/Token';
 import { useAuthStore } from '../../store/authStore';
 import {
@@ -115,6 +123,7 @@ export const TopUpScreen: React.FC = () => {
   } = usePortalDataStore();
   const { profileUpdateTimestamp } = useSyncStore();
   const { t } = useTranslation();
+  const showToast = useToast();
   const navigate = useNavigate();
 
   const sortLabels = useMemo<Record<SortOption, string>>(
@@ -145,6 +154,42 @@ export const TopUpScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'gems' | 'bundles'>('all');
   const [sortBy, setSortBy] = useState<SortOption>('default');
   const [selectedPackForDrawer, setSelectedPackForDrawer] = useState<TopUpPack | null>(null);
+  const [uidCopied, setUidCopied] = useState(false);
+  const [activeSceneIndex, setActiveSceneIndex] = useState(0);
+
+  const gameScenes = useMemo(
+    () => [
+      {
+        id: 'awaken',
+        num: '01',
+        src: '/game-assets/hero-awaken.png',
+        title: t('topup.scene1Label'),
+        caption: t('topup.scene1Caption'),
+      },
+      {
+        id: 'briefing',
+        num: '02',
+        src: '/game-assets/hero-briefing.png',
+        title: t('topup.scene2Label'),
+        caption: t('topup.scene2Caption'),
+      },
+      {
+        id: 'eye',
+        num: '03',
+        src: '/game-assets/hero-eye.png',
+        title: t('topup.scene3Label'),
+        caption: t('topup.scene3Caption'),
+      },
+    ],
+    [t]
+  );
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveSceneIndex((prev) => (prev + 1) % 3);
+    }, 6000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     fetchPacks();
@@ -174,6 +219,20 @@ export const TopUpScreen: React.FC = () => {
     return t('topup.catalogUnexpectedError');
   }, [packsErrorType, t]);
 
+  const handleCopyUid = () => {
+    const idToCopy = profile.playerId || playerId;
+    if (!idToCopy) return;
+    navigator.clipboard.writeText(idToCopy);
+    setUidCopied(true);
+    showToast({
+      body: t('common.uidCopiedToast', { id: idToCopy }),
+      type: 'info',
+      uniqueID: 'pactkeeper-topup-copy-uid',
+      collisionBehavior: 'overwrite',
+    });
+    window.setTimeout(() => setUidCopied(false), 1600);
+  };
+
   const handleSelectPack = (pkg: TopUpPack) => {
     if (!isLoggedIn) {
       openAuthPrompt({
@@ -195,6 +254,10 @@ export const TopUpScreen: React.FC = () => {
     navigate('/login');
   };
 
+  const handleScrollToGuide = () => {
+    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const pureGemCount = useMemo(
     () => packs.filter((pack) => !hasPackInclusions(pack)).length,
     [packs]
@@ -205,7 +268,6 @@ export const TopUpScreen: React.FC = () => {
     [packs]
   );
 
-  // Exclude test packs from featured promo & Best Value calculation
   const eligiblePromoPacks = useMemo(
     () => packs.filter((p) => !isTestPack(p) && p.priceVnd > 0),
     [packs]
@@ -251,14 +313,37 @@ export const TopUpScreen: React.FC = () => {
     return list;
   }, [filteredPacks, sortBy]);
 
+  const deliverySteps = useMemo(
+    () => [
+      {
+        num: '01',
+        icon: UserCheck,
+        title: t('topup.guideStep1Title'),
+        desc: t('topup.guideStep1Desc'),
+      },
+      {
+        num: '02',
+        icon: QrCode,
+        title: t('topup.guideStep2Title'),
+        desc: t('topup.guideStep2Desc'),
+      },
+      {
+        num: '03',
+        icon: Zap,
+        title: t('topup.guideStep3Title'),
+        desc: t('topup.guideStep3Desc'),
+      },
+    ],
+    [t]
+  );
+
   const xpPercent = Math.min(Math.max(profile.experience, 0), 100);
 
-  // Only show full-page skeleton on initial cold load (never when returning from another tab)
   if (!packsLoaded && packs.length === 0) {
     return (
       <VStack gap={5} width="100%">
-        <Skeleton width="100%" height={180} radius={4} />
-        <Skeleton width="100%" height={96} radius={4} />
+        <Skeleton width="100%" height={220} radius={4} />
+        <Skeleton width="100%" height={110} radius={4} />
         <Grid columns={{ minWidth: 250, max: 4, repeat: 'fit' }} gap={4} width="100%">
           {[0, 1, 2, 3].map((idx) => (
             <Skeleton key={idx} width="100%" height={360} radius={4} />
@@ -269,10 +354,147 @@ export const TopUpScreen: React.FC = () => {
   }
 
   return (
-    <VStack gap={5} width="100%">
-      {/* 1. Character Identity & Balance (Primary Player Context) */}
+    <VStack gap={6} width="100%">
+      {/* TIER 1: Cinematic Unity_Pactkeeper Hero Stage + Featured Pack Showcase */}
+      {featuredPack && (
+        <Section variant="section" padding={6} width="100%" className="heroPromoSurface">
+          <VStack className="heroBgLayer">
+            {gameScenes.map((scene, idx) => (
+              <img
+                key={scene.id}
+                src={scene.src}
+                alt=""
+                aria-hidden="true"
+                className={
+                  idx === activeSceneIndex
+                    ? 'heroBgImage heroBgImageActive'
+                    : 'heroBgImage'
+                }
+              />
+            ))}
+          </VStack>
+          <VStack className="heroBgScrim" />
+
+          <VStack gap={5} width="100%" className="heroForeground">
+            <Grid gap={5} width="100%" className="heroGrid">
+              <VStack gap={4} className="heroCopy">
+                <HStack gap={2} wrap="wrap" vAlign="center">
+                  <Token
+                    color="yellow"
+                    size="md"
+                    icon={<Icon icon={Sparkles} size="xsm" />}
+                    label={t('topup.promoTag')}
+                  />
+                  <HStack gap={1.5} vAlign="center">
+                    <StatusDot variant="success" label="Official server online" isPulsing />
+                    <Text type="supporting" size="base" color="secondary">
+                      {t('topup.serverStatus')}
+                    </Text>
+                  </HStack>
+                </HStack>
+
+                <Heading level={1} weight="bold">
+                  {t('topup.promoHeading')}
+                </Heading>
+
+                <Text type="body" size="lg" color="secondary" display="block">
+                  {t('topup.promoDesc')}
+                </Text>
+
+                <HStack gap={2} wrap="wrap">
+                  <Token size="md" color="gray" icon={<Icon icon={QrCode} size="xsm" />} label={t('topup.heroPillFee')} />
+                  <Token size="md" color="gray" icon={<Icon icon={Zap} size="xsm" />} label={t('topup.heroPillSpeed')} />
+                  <Token size="md" color="gray" icon={<Icon icon={ShieldCheck} size="xsm" />} label={t('topup.heroPillVerified')} />
+                </HStack>
+
+                <HStack gap={3} wrap="wrap" className="primaryCtaWrap">
+                  <Button
+                    label={t('topup.promoCta')}
+                    variant="primary"
+                    size="lg"
+                    endContent={<Icon icon={ChevronRight} size="sm" />}
+                    onClick={() => setSelectedPackForDrawer(featuredPack)}
+                  />
+                  {bundleCount > 0 && (
+                    <Button
+                      label={t('topup.promoBundlesCta')}
+                      variant="secondary"
+                      size="lg"
+                      icon={<Icon icon={Sword} size="sm" />}
+                      onClick={() => setActiveTab('bundles')}
+                    />
+                  )}
+                  <Button
+                    label={t('topup.promoHowItWorksCta')}
+                    variant="ghost"
+                    size="lg"
+                    onClick={handleScrollToGuide}
+                  />
+                </HStack>
+              </VStack>
+
+              <Card
+                variant="default"
+                padding={5}
+                elevation="med"
+                className="heroShowcaseCard"
+              >
+                <VStack gap={3} hAlign="center">
+                  <Token
+                    color="cyan"
+                    size="md"
+                    icon={<Icon icon={Gem} size="xsm" />}
+                    label={t('topup.featuredShowcaseLabel')}
+                  />
+                  <Center height={120} className="heroShowcaseGem">
+                    <GemArt gemsAmount={featuredPack.gemsAmount} size={112} />
+                  </Center>
+                  <VStack gap={0.5} hAlign="center">
+                    <Heading level={3} justify="center">
+                      {featuredPack.name}
+                    </Heading>
+                    <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
+                      +{featuredPack.gemsAmount.toLocaleString('en-US')} {t('topup.gems')}
+                    </Text>
+                    <Text type="supporting" size="base" color="secondary" hasTabularNumbers>
+                      {featuredPack.priceVnd.toLocaleString('vi-VN')} VND
+                    </Text>
+                  </VStack>
+                  <Button
+                    label={t('topup.viewDetails')}
+                    variant="secondary"
+                    size="md"
+                    width="100%"
+                    endContent={<Icon icon={ChevronRight} size="sm" />}
+                    onClick={() => setSelectedPackForDrawer(featuredPack)}
+                  />
+                </VStack>
+              </Card>
+            </Grid>
+
+            {/* Interactive In-Game Scene Selector Strip */}
+            <HStack gap={2} wrap="wrap" vAlign="center">
+              {gameScenes.map((scene, idx) => {
+                const isActive = idx === activeSceneIndex;
+                return (
+                  <Button
+                    key={scene.id}
+                    variant={isActive ? 'secondary' : 'ghost'}
+                    size="sm"
+                    label={`${scene.num} · ${scene.title}`}
+                    className="scenePillBtn"
+                    onClick={() => setActiveSceneIndex(idx)}
+                  />
+                );
+              })}
+            </HStack>
+          </VStack>
+        </Section>
+      )}
+
+      {/* TIER 2: Verified Character Identity & Balance Ribbon */}
       {isLoggedIn ? (
-        <Section variant="section" padding={5} width="100%">
+        <Section variant="section" padding={5} width="100%" className="accountRibbon">
           <VStack gap={4} width="100%">
             <HStack hAlign="between" vAlign="center" gap={4} wrap="wrap" width="100%">
               <HStack gap={3} vAlign="center" wrap="wrap" className="identityCol">
@@ -284,7 +506,9 @@ export const TopUpScreen: React.FC = () => {
                 />
                 <VStack gap={1.5}>
                   <HStack gap={2} vAlign="center" wrap="wrap">
-                    <Heading level={2} weight="bold">{profile.username}</Heading>
+                    <Heading level={2} weight="bold">
+                      {profile.username}
+                    </Heading>
                     <Token color="yellow" size="sm" label={`Lv.${profile.level}`} />
                     <HStack gap={1} vAlign="center">
                       <StatusDot variant="success" label="Verified" />
@@ -298,6 +522,15 @@ export const TopUpScreen: React.FC = () => {
                     <Text type="code" size="sm" color="secondary" weight="semibold">
                       {t('common.playerIdLabel')}: {profile.playerId || playerId || 'N/A'}
                     </Text>
+                    {(profile.playerId || playerId) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<Icon icon={uidCopied ? Check : Copy} size="xsm" color={uidCopied ? 'success' : 'secondary'} />}
+                        label={uidCopied ? t('topup.copiedUidShort') : t('topup.copyUidAction')}
+                        onClick={handleCopyUid}
+                      />
+                    )}
                     <HStack gap={1.5} vAlign="center">
                       <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
                         XP {profile.experience}/100
@@ -364,13 +597,15 @@ export const TopUpScreen: React.FC = () => {
           </VStack>
         </Section>
       ) : (
-        <Section variant="section" padding={5} width="100%">
+        <Section variant="section" padding={5} width="100%" className="accountRibbon">
           <HStack hAlign="between" vAlign="center" gap={4} wrap="wrap" width="100%">
             <HStack gap={3} vAlign="center" wrap="wrap" className="identityCol">
               <Avatar size="xl" name={t('common.guest')} />
               <VStack gap={1.5}>
                 <HStack gap={2} vAlign="center" wrap="wrap">
-                  <Heading level={2} weight="bold">{t('topup.guestExplorer')}</Heading>
+                  <Heading level={2} weight="bold">
+                    {t('topup.guestExplorer')}
+                  </Heading>
                   <Token
                     color="yellow"
                     size="md"
@@ -395,273 +630,335 @@ export const TopUpScreen: React.FC = () => {
         </Section>
       )}
 
-      {/* 2. Top-Up Conversion Hero Banner with Direct CTAs */}
-      {featuredPack && (
-        <Section variant="section" padding={5} width="100%" className="heroPromoSurface">
-          <HStack hAlign="between" vAlign="center" gap={6} wrap="wrap" width="100%">
-            <VStack gap={3} className="heroCopy">
-              <HStack gap={2} wrap="wrap">
-                <Token
-                  color="yellow"
-                  size="md"
-                  icon={<Icon icon={Sparkles} size="xsm" />}
-                  label={t('topup.promoTag')}
-                />
-                <Token
-                  color="cyan"
-                  size="md"
-                  icon={<Icon icon={Gem} size="xsm" />}
-                  label={t('topup.topTierBadge', {
-                    name: featuredPack.name,
-                    gems: featuredPack.gemsAmount.toLocaleString('en-US'),
-                  })}
-                />
-              </HStack>
+      {/* TIER 3: Modular Storefront Catalog with Animated Tab Panel Transitions */}
+      <VStack gap={4} width="100%">
+        <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3} width="100%">
+          <TabList
+            value={activeTab}
+            onChange={(value) => setActiveTab(value as 'all' | 'gems' | 'bundles')}
+          >
+            <Tab
+              value="all"
+              label={t('topup.allPackages')}
+              icon={<Icon icon={Layers} size="sm" />}
+              endContent={<Badge variant="neutral" label={packs.length} />}
+            />
+            <Tab
+              value="gems"
+              label={t('topup.pureGems')}
+              icon={<Icon icon={Gem} size="sm" />}
+              endContent={<Badge variant="neutral" label={pureGemCount} />}
+            />
+            <Tab
+              value="bundles"
+              label={t('topup.heroBundles')}
+              icon={<Icon icon={Sword} size="sm" />}
+              endContent={<Badge variant="neutral" label={bundleCount} />}
+            />
+          </TabList>
 
-              <Heading level={2} weight="bold">
-                {t('topup.promoHeading')}
-              </Heading>
+          <DropdownMenu
+            button={{
+              variant: 'secondary',
+              size: 'sm',
+              label: t('topup.sortPrefix', { label: sortLabels[sortBy] }),
+              icon: <Icon icon={ArrowDownUp} size="sm" />,
+            }}
+            items={[
+              {
+                id: 'default',
+                label: t('topup.sortDefault'),
+                onClick: () => setSortBy('default'),
+              },
+              {
+                id: 'price-asc',
+                label: t('topup.sortPriceAsc'),
+                onClick: () => setSortBy('price-asc'),
+              },
+              {
+                id: 'price-desc',
+                label: t('topup.sortPriceDesc'),
+                onClick: () => setSortBy('price-desc'),
+              },
+              {
+                id: 'gems-desc',
+                label: t('topup.sortGemsDesc'),
+                onClick: () => setSortBy('gems-desc'),
+              },
+            ]}
+          />
+        </HStack>
 
-              <Text type="body" size="base" color="secondary" display="block">
-                {t('topup.promoDesc')}
-              </Text>
-
-              <HStack gap={2} wrap="wrap" className="primaryCtaWrap">
-                <Button
-                  label={t('topup.promoCta')}
-                  variant="primary"
-                  size="md"
-                  endContent={<Icon icon={ChevronRight} size="sm" />}
-                  onClick={() => setSelectedPackForDrawer(featuredPack)}
-                />
-                {bundleCount > 0 && (
+        {loadError && packs.length === 0 ? (
+          <Card variant="default" padding={6} width="100%">
+            <EmptyState
+              icon={<Icon icon={AlertCircle} size="lg" color="accent" />}
+              title={t('topup.catalogUnavailableTitle')}
+              description={loadError}
+              actions={
+                <HStack gap={2} hAlign="center" wrap="wrap">
                   <Button
-                    label={t('topup.promoBundlesCta')}
+                    label={t('topup.retry')}
                     variant="secondary"
-                    size="md"
-                    icon={<Icon icon={Sword} size="sm" />}
-                    onClick={() => setActiveTab('bundles')}
+                    icon={<Icon icon={RefreshCw} size="sm" />}
+                    onClick={() => fetchPacks()}
                   />
-                )}
-              </HStack>
-            </VStack>
-
-            <Center className="packGemArt">
-              <GemArt gemsAmount={featuredPack.gemsAmount} size={116} />
-            </Center>
-          </HStack>
-        </Section>
-      )}
-
-      {/* 3. Category Filter Tabs & Sort Dropdown */}
-      <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3} width="100%">
-        <TabList
-          value={activeTab}
-          onChange={(value) => setActiveTab(value as 'all' | 'gems' | 'bundles')}
-        >
-          <Tab
-            value="all"
-            label={t('topup.allPackages')}
-            icon={<Icon icon={Layers} size="sm" />}
-            endContent={<Badge variant="neutral" label={packs.length} />}
-          />
-          <Tab
-            value="gems"
-            label={t('topup.pureGems')}
-            icon={<Icon icon={Gem} size="sm" />}
-            endContent={<Badge variant="neutral" label={pureGemCount} />}
-          />
-          <Tab
-            value="bundles"
-            label={t('topup.heroBundles')}
-            icon={<Icon icon={Sword} size="sm" />}
-            endContent={<Badge variant="neutral" label={bundleCount} />}
-          />
-        </TabList>
-
-        <DropdownMenu
-          button={{
-            variant: 'secondary',
-            size: 'sm',
-            label: t('topup.sortPrefix', { label: sortLabels[sortBy] }),
-            icon: <Icon icon={ArrowDownUp} size="sm" />,
-          }}
-          items={[
-            {
-              id: 'default',
-              label: t('topup.sortDefault'),
-              onClick: () => setSortBy('default'),
-            },
-            {
-              id: 'price-asc',
-              label: t('topup.sortPriceAsc'),
-              onClick: () => setSortBy('price-asc'),
-            },
-            {
-              id: 'price-desc',
-              label: t('topup.sortPriceDesc'),
-              onClick: () => setSortBy('price-desc'),
-            },
-            {
-              id: 'gems-desc',
-              label: t('topup.sortGemsDesc'),
-              onClick: () => setSortBy('gems-desc'),
-            },
-          ]}
-        />
-      </HStack>
-
-      {/* 4. Product Catalog Grid (Uniform Card Heights) */}
-      {loadError && packs.length === 0 ? (
-        <Card variant="default" padding={6} width="100%">
-          <EmptyState
-            icon={<Icon icon={AlertCircle} size="lg" color="accent" />}
-            title={t('topup.catalogUnavailableTitle')}
-            description={loadError}
-            actions={
-              <HStack gap={2} hAlign="center" wrap="wrap">
-                <Button
-                  label={t('topup.retry')}
-                  variant="secondary"
-                  icon={<Icon icon={RefreshCw} size="sm" />}
-                  onClick={() => fetchPacks()}
-                />
-                {!isLoggedIn && (
-                  <Button
-                    label={t('common.signIn')}
-                    variant="primary"
-                    icon={<Icon icon={LogIn} size="sm" />}
-                    onClick={handleGuestSignIn}
-                  />
-                )}
-              </HStack>
-            }
-          />
-        </Card>
-      ) : sortedPacks.length === 0 ? (
-        <Card variant="default" padding={6} width="100%">
-          <EmptyState
-            icon={<Icon icon={PackageCheck} size="lg" color="accent" />}
-            title={t('topup.emptyCategoryTitle')}
-            description={t('topup.emptyCategoryDesc')}
-          />
-        </Card>
-      ) : (
-        <Grid
-          columns={{ minWidth: 250, max: 4, repeat: 'fit' }}
-          gap={4}
-          width="100%"
-          className="catalogGrid"
-        >
-          {sortedPacks.map((pkg) => {
-            const isBundle = hasPackInclusions(pkg);
-            const allPills = getInclusionPills(pkg);
-            const visiblePills = allPills.slice(0, MAX_VISIBLE_CARD_PILLS);
-            const hiddenCount = Math.max(0, allPills.length - MAX_VISIBLE_CARD_PILLS);
-            const tierToken = getPackTierToken(pkg, bestValuePackId, t);
-
-            const isBestValue = Boolean(bestValuePackId && pkg.id === bestValuePackId);
-
-            return (
-              <Card
-                key={pkg.id}
-                variant="default"
-                padding={5}
-                height="100%"
-                className={isBestValue ? 'packCard packCardFeatured' : 'packCard'}
-              >
-                <VStack gap={4} hAlign="center" height="100%" width="100%">
-                  <HStack hAlign="end" width="100%">
-                    <Token size="md" color={tierToken.color} label={tierToken.label} />
-                  </HStack>
-
-                  <Center height={116} width="100%" className="packGemArt">
-                    <GemArt gemsAmount={pkg.gemsAmount} size={92} />
-                  </Center>
-
-                  <VStack gap={1} hAlign="center" width="100%">
-                    <Heading level={3} weight="bold" justify="center">
-                      {pkg.name}
-                    </Heading>
-                    <HStack gap={1.5} vAlign="center" hAlign="center">
-                      <Icon icon={Gem} size="md" color="accent" />
-                      <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
-                        {pkg.gemsAmount.toLocaleString('en-US')}
-                      </Text>
-                      <Text type="supporting" size="base" color="secondary">
-                        {t('topup.gems')}
-                      </Text>
-                    </HStack>
-                  </VStack>
-
-                  <VStack
-                    gap={1.5}
-                    hAlign="center"
-                    vAlign="center"
-                    width="100%"
-                    className="inclusionsArea"
-                  >
-                    {visiblePills.length > 0 ? (
-                      <HStack gap={1.5} hAlign="center" wrap="wrap" width="100%">
-                        {visiblePills.map((pill) => (
-                          <Token
-                            key={pill.key}
-                            label={pill.label}
-                            size="sm"
-                            color={pill.color}
-                            icon={<Icon icon={pill.icon} size="xsm" />}
-                          />
-                        ))}
-                        {hiddenCount > 0 && (
-                          <Token
-                            label={t('topup.moreItems', { count: hiddenCount })}
-                            size="sm"
-                            color="gray"
-                          />
-                        )}
-                      </HStack>
-                    ) : (
-                      <Text
-                        type="supporting"
-                        size="base"
-                        color="secondary"
-                        justify="center"
-                        display="block"
-                      >
-                        {isBundle ? t('topup.standardBundleDesc') : t('topup.standardGemDesc')}
-                      </Text>
-                    )}
-                  </VStack>
-
-                  <VStack width="100%" className="cardFooter">
+                  {!isLoggedIn && (
                     <Button
-                      label={`${pkg.priceVnd.toLocaleString('vi-VN')} VND`}
+                      label={t('common.signIn')}
                       variant="primary"
-                      size="lg"
-                      width="100%"
-                      endContent={
-                        isLoggedIn ? (
-                          <Icon icon={ChevronRight} size="md" />
-                        ) : (
-                          <Icon icon={Lock} size="sm" />
-                        )
-                      }
-                      tooltip={
-                        isLoggedIn
-                          ? t('topup.reviewTooltip')
-                          : t('topup.signInRequiredTooltip')
-                      }
-                      onClick={() => setSelectedPackForDrawer(pkg)}
+                      icon={<Icon icon={LogIn} size="sm" />}
+                      onClick={handleGuestSignIn}
                     />
+                  )}
+                </HStack>
+              }
+            />
+          </Card>
+        ) : sortedPacks.length === 0 ? (
+          <Card variant="default" padding={6} width="100%">
+            <EmptyState
+              icon={<Icon icon={PackageCheck} size="lg" color="accent" />}
+              title={t('topup.emptyCategoryTitle')}
+              description={t('topup.emptyCategoryDesc')}
+            />
+          </Card>
+        ) : (
+          <VStack key={`${activeTab}-${sortBy}`} width="100%" className="tabPanelMotion">
+            <Grid
+              columns={{ minWidth: 250, max: 4, repeat: 'fit' }}
+              gap={4}
+              width="100%"
+              className="catalogGrid"
+            >
+              {sortedPacks.map((pkg) => {
+                const isBundle = hasPackInclusions(pkg);
+                const allPills = getInclusionPills(pkg);
+                const visiblePills = allPills.slice(0, MAX_VISIBLE_CARD_PILLS);
+                const hiddenCount = Math.max(0, allPills.length - MAX_VISIBLE_CARD_PILLS);
+                const tierToken = getPackTierToken(pkg, bestValuePackId, t);
+                const isBestValue = Boolean(bestValuePackId && pkg.id === bestValuePackId);
+
+                return (
+                  <Card
+                    key={pkg.id}
+                    variant="default"
+                    padding={5}
+                    height="100%"
+                    className={isBestValue ? 'packCard packCardFeatured' : 'packCard'}
+                  >
+                    <VStack gap={4} hAlign="center" height="100%" width="100%">
+                      <HStack hAlign="end" width="100%">
+                        <Token size="md" color={tierToken.color} label={tierToken.label} />
+                      </HStack>
+
+                      <Center height={116} width="100%" className="packGemArt">
+                        <GemArt gemsAmount={pkg.gemsAmount} size={104} />
+                      </Center>
+
+                      <VStack gap={1} hAlign="center" width="100%">
+                        <Heading level={3} weight="bold" justify="center">
+                          {pkg.name}
+                        </Heading>
+                        <HStack gap={1.5} vAlign="center" hAlign="center">
+                          <Icon icon={Gem} size="md" color="accent" />
+                          <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
+                            {pkg.gemsAmount.toLocaleString('en-US')}
+                          </Text>
+                          <Text type="supporting" size="base" color="secondary">
+                            {t('topup.gems')}
+                          </Text>
+                        </HStack>
+                      </VStack>
+
+                      <VStack
+                        gap={1.5}
+                        hAlign="center"
+                        vAlign="center"
+                        width="100%"
+                        className="inclusionsArea"
+                      >
+                        {visiblePills.length > 0 ? (
+                          <HStack gap={1.5} hAlign="center" wrap="wrap" width="100%">
+                            {visiblePills.map((pill) => (
+                              <Token
+                                key={pill.key}
+                                label={pill.label}
+                                size="sm"
+                                color={pill.color}
+                                icon={<Icon icon={pill.icon} size="xsm" />}
+                              />
+                            ))}
+                            {hiddenCount > 0 && (
+                              <Token
+                                label={t('topup.moreItems', { count: hiddenCount })}
+                                size="sm"
+                                color="gray"
+                              />
+                            )}
+                          </HStack>
+                        ) : (
+                          <Text
+                            type="supporting"
+                            size="base"
+                            color="secondary"
+                            justify="center"
+                            display="block"
+                          >
+                            {isBundle ? t('topup.standardBundleDesc') : t('topup.standardGemDesc')}
+                          </Text>
+                        )}
+                      </VStack>
+
+                      <VStack width="100%" className="cardFooter">
+                        <Button
+                          label={`${pkg.priceVnd.toLocaleString('vi-VN')} VND`}
+                          variant="primary"
+                          size="lg"
+                          width="100%"
+                          endContent={
+                            isLoggedIn ? (
+                              <Icon icon={ChevronRight} size="md" />
+                            ) : (
+                              <Icon icon={Lock} size="sm" />
+                            )
+                          }
+                          tooltip={
+                            isLoggedIn
+                              ? t('topup.reviewTooltip')
+                              : t('topup.signInRequiredTooltip')
+                          }
+                          onClick={() => setSelectedPackForDrawer(pkg)}
+                        />
+                      </VStack>
+                    </VStack>
+                  </Card>
+                );
+              })}
+            </Grid>
+          </VStack>
+        )}
+      </VStack>
+
+      {/* TIER 4A: Inside the World of Pactkeeper (Unity_Pactkeeper Key Art Showcase) */}
+      <Section variant="section" padding={5} width="100%">
+        <VStack gap={4} width="100%">
+          <VStack gap={1}>
+            <Heading level={2} weight="bold">
+              {t('topup.worldSectionTitle')}
+            </Heading>
+            <Text type="supporting" size="base" color="secondary" display="block">
+              {t('topup.worldSectionDesc')}
+            </Text>
+          </VStack>
+
+          <Grid columns={{ minWidth: 260, max: 3, repeat: 'fit' }} gap={4} width="100%">
+            {gameScenes.map((scene, idx) => (
+              <Card key={`world-${scene.id}`} variant="default" padding={0} className="worldSceneCard">
+                <VStack gap={0} width="100%">
+                  <VStack className="worldSceneThumbWrap">
+                    <img
+                      src={scene.src}
+                      alt={scene.title}
+                      className="worldSceneThumb"
+                      loading="lazy"
+                    />
+                  </VStack>
+                  <VStack gap={1} padding={4}>
+                    <HStack hAlign="between" vAlign="center" width="100%">
+                      <Heading level={4}>{scene.title}</Heading>
+                      <Token
+                        size="sm"
+                        color={idx === activeSceneIndex ? 'yellow' : 'gray'}
+                        label={scene.num}
+                      />
+                    </HStack>
+                    <Text type="supporting" size="base" color="secondary" display="block">
+                      {scene.caption}
+                    </Text>
                   </VStack>
                 </VStack>
               </Card>
-            );
-          })}
-        </Grid>
-      )}
+            ))}
+          </Grid>
+        </VStack>
+      </Section>
 
-      {/* 5. Quick Pack Order Drawer (Full Bundle Breakdown) */}
+      {/* TIER 4B: 3-Step Instant Delivery Guide */}
+      <Section id="how-it-works" variant="section" padding={5} width="100%">
+        <VStack gap={4} width="100%">
+          <VStack gap={1}>
+            <Heading level={2} weight="bold">
+              {t('topup.guideSectionTitle')}
+            </Heading>
+            <Text type="supporting" size="base" color="secondary" display="block">
+              {t('topup.guideSectionDesc')}
+            </Text>
+          </VStack>
+
+          <Grid columns={{ minWidth: 240, max: 3, repeat: 'fit' }} gap={4} width="100%">
+            {deliverySteps.map((step) => (
+              <Card key={step.num} variant="muted" padding={4} className="interactiveCard">
+                <VStack gap={3}>
+                  <HStack hAlign="between" vAlign="center" width="100%">
+                    <Center className="stepNumberBadge">
+                      <Text type="code" size="sm" weight="bold">
+                        {step.num}
+                      </Text>
+                    </Center>
+                    <Icon icon={step.icon} size="md" color="accent" />
+                  </HStack>
+                  <VStack gap={1}>
+                    <Heading level={4}>{step.title}</Heading>
+                    <Text type="supporting" size="base" color="secondary" display="block">
+                      {step.desc}
+                    </Text>
+                  </VStack>
+                </VStack>
+              </Card>
+            ))}
+          </Grid>
+        </VStack>
+      </Section>
+
+      {/* TIER 5: Quick Top-Up FAQ */}
+      <Card variant="default" padding={5} width="100%">
+        <VStack gap={3} width="100%">
+          <HStack gap={2} vAlign="center">
+            <Icon icon={HelpCircle} size="md" color="accent" />
+            <Heading level={3}>{t('topup.quickFaqTitle')}</Heading>
+          </HStack>
+          <Divider />
+          <CollapsibleGroup type="single" hasDividers>
+            <Collapsible
+              value="topup-faq-1"
+              trigger={<Text size="base" weight="medium">{t('counsel.faq1Q')}</Text>}
+            >
+              <Text type="supporting" size="sm" color="secondary">
+                {t('counsel.faq1A')}
+              </Text>
+            </Collapsible>
+            <Collapsible
+              value="topup-faq-2"
+              trigger={<Text size="base" weight="medium">{t('counsel.faq2Q')}</Text>}
+            >
+              <Text type="supporting" size="sm" color="secondary">
+                {t('counsel.faq2A')}
+              </Text>
+            </Collapsible>
+            <Collapsible
+              value="topup-faq-3"
+              trigger={<Text size="base" weight="medium">{t('counsel.faq3Q')}</Text>}
+            >
+              <Text type="supporting" size="sm" color="secondary">
+                {t('counsel.faq3A')}
+              </Text>
+            </Collapsible>
+          </CollapsibleGroup>
+        </VStack>
+      </Card>
+
+      {/* Quick Pack Order Drawer */}
       <Drawer
         isOpen={Boolean(selectedPackForDrawer)}
         onOpenChange={(open) => {
@@ -679,7 +976,7 @@ export const TopUpScreen: React.FC = () => {
           <VStack gap={5} width="100%" padding={4}>
             <HStack hAlign="between" vAlign="center" width="100%">
               <VStack gap={0.5}>
-                <Text type="supporting" size="2xs" color="secondary">
+                <Text type="supporting" size="sm" color="secondary" weight="semibold">
                   {t('topup.orderPreviewLabel')}
                 </Text>
                 <Heading level={2}>{selectedPackForDrawer.name}</Heading>
@@ -732,7 +1029,7 @@ export const TopUpScreen: React.FC = () => {
 
             <Card variant="default" padding={3} width="100%">
               <VStack gap={2} width="100%">
-                <Text type="supporting" size="2xs" color="secondary">
+                <Text type="supporting" size="sm" color="secondary" weight="semibold">
                   {t('topup.deliveryRecipientLabel')}
                 </Text>
                 {isLoggedIn ? (
@@ -740,10 +1037,10 @@ export const TopUpScreen: React.FC = () => {
                     <HStack gap={2} vAlign="center">
                       <Avatar size="sm" name={profile.username} />
                       <VStack gap={0.5}>
-                        <Text weight="semibold" size="sm">
+                        <Text weight="semibold" size="base">
                           {profile.username}
                         </Text>
-                        <Text type="code" size="2xs" color="secondary">
+                        <Text type="code" size="sm" color="secondary">
                           {t('common.uid')}: {profile.playerId || playerId}
                         </Text>
                       </VStack>
@@ -772,7 +1069,7 @@ export const TopUpScreen: React.FC = () => {
 
               <HStack gap={2} vAlign="start">
                 <Icon icon={ShieldCheck} size="sm" color="accent" />
-                <Text type="supporting" size="2xs" color="secondary">
+                <Text type="supporting" size="sm" color="secondary">
                   {t('topup.gatewayGuaranteeShort')}
                 </Text>
               </HStack>
@@ -780,7 +1077,7 @@ export const TopUpScreen: React.FC = () => {
 
             <Divider />
 
-            <VStack gap={2} width="100%">
+            <VStack gap={2} width="100%" className="primaryCtaWrap">
               <Button
                 label={
                   isLoggedIn

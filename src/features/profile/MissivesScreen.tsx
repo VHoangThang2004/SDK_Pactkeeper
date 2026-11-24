@@ -293,8 +293,9 @@ export const MissivesScreen: React.FC = () => {
           />
         </Card>
       ) : (
-        <Card padding={0}>
-          <List density="spacious" hasDividers edge="bleed">
+        <VStack key={activeFilter} width="100%" className="tabPanelMotion">
+          <Card padding={0}>
+            <List density="spacious" hasDividers edge="bleed">
             {filteredNotifications.map((note) => {
               const isPayment = isPaymentNotification(note);
               return (
@@ -369,8 +370,9 @@ export const MissivesScreen: React.FC = () => {
                 />
               );
             })}
-          </List>
-        </Card>
+            </List>
+          </Card>
+        </VStack>
       )}
     </VStack>
   );

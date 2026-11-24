@@ -266,7 +266,7 @@ export const CounselThreadView: React.FC = () => {
                   size="sm"
                 />
               </HStack>
-              <Text type="supporting" size="2xs" color="secondary">
+              <Text type="supporting" size="sm" color="secondary">
                 {isConnected ? t('counsel.liveCounselOnline') : t('counsel.activeCounselService')}
               </Text>
             </VStack>
@@ -278,7 +278,7 @@ export const CounselThreadView: React.FC = () => {
               label={isConnected ? t('counsel.onlineNotice') : t('counsel.disconnectedNotice')}
               isPulsing={isConnected}
             />
-            <Text type="supporting" size="2xs" color="secondary">
+            <Text type="supporting" size="sm" color="secondary">
               {isConnected ? t('counsel.statusLive') : t('counsel.statusSyncing')}
             </Text>
           </HStack>
@@ -358,11 +358,11 @@ export const CounselThreadView: React.FC = () => {
                           <Timestamp
                             value={msg.createdAt}
                             format="time"
-                            size="2xs"
+                            size="sm"
                             color="secondary"
                           />
                           {self && (
-                            <Text type="supporting" size="2xs" color="secondary">
+                            <Text type="supporting" size="sm" color="secondary">
                               · {t('counsel.sentLabel')}
                             </Text>
                           )}

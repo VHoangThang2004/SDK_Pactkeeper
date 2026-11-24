@@ -8,6 +8,7 @@ import {
   Gem,
   Receipt,
   MessageSquare,
+  Clock,
 } from 'lucide-react';
 import { AlertDialog } from '@astryxdesign/core/AlertDialog';
 import { Badge } from '@astryxdesign/core/Badge';
@@ -15,6 +16,7 @@ import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
+import { Grid } from '@astryxdesign/core/Grid';
 import { Icon } from '@astryxdesign/core/Icon';
 import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout';
 import { List, ListItem } from '@astryxdesign/core/List';
@@ -158,13 +160,19 @@ export const HistoryScreen: React.FC = () => {
     let completed = 0;
     let pending = 0;
     let cancelled = 0;
+    let deliveredGems = 0;
     for (const txn of history) {
       const state = classifyOrder(txn);
-      if (state.isCompleted) completed++;
-      else if (state.isActivePending) pending++;
-      else cancelled++;
+      if (state.isCompleted) {
+        completed++;
+        deliveredGems += txn.gemsAmount || 0;
+      } else if (state.isActivePending) {
+        pending++;
+      } else {
+        cancelled++;
+      }
     }
-    return { all: history.length, completed, pending, cancelled };
+    return { all: history.length, completed, pending, cancelled, deliveredGems };
   }, [history, classifyOrder]);
 
   const filteredHistory = useMemo(
@@ -358,7 +366,7 @@ export const HistoryScreen: React.FC = () => {
                     : t('history.pactPackage')}
                 </Text>
               </HStack>
-              <Text type="supporting" size="2xs" color="secondary">
+              <Text type="supporting" size="sm" color="secondary">
                 {isCompleted
                   ? t('history.dispatchedToMail')
                   : isActivePending
@@ -401,6 +409,68 @@ export const HistoryScreen: React.FC = () => {
 
   return (
     <VStack gap={5}>
+      {/* Overview Stat Strip to balance horizontal space */}
+      <Grid columns={{ minWidth: 240, max: 3, repeat: 'fit' }} gap={4} width="100%">
+        <Card variant="muted" padding={4} className="interactiveCard">
+          <HStack gap={3} vAlign="center">
+            <Icon icon={Receipt} size="lg" color="accent" />
+            <VStack gap={0.5}>
+              <Text type="supporting" size="base" color="secondary" weight="semibold">
+                {t('history.statTotalOrders')}
+              </Text>
+              {showColdSkeleton ? (
+                <Skeleton width={56} height={32} />
+              ) : (
+                <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
+                  {counts.all}
+                </Text>
+              )}
+            </VStack>
+          </HStack>
+        </Card>
+
+        <Card variant="muted" padding={4} className="interactiveCard">
+          <HStack gap={3} vAlign="center">
+            <Icon icon={Gem} size="lg" color="accent" />
+            <VStack gap={0.5}>
+              <Text type="supporting" size="base" color="secondary" weight="semibold">
+                {t('history.statCompletedGems')}
+              </Text>
+              {showColdSkeleton ? (
+                <Skeleton width={72} height={32} />
+              ) : (
+                <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
+                  {counts.deliveredGems.toLocaleString('en-US')}
+                </Text>
+              )}
+            </VStack>
+          </HStack>
+        </Card>
+
+        <Card variant="muted" padding={4} className="interactiveCard">
+          <HStack gap={3} vAlign="center">
+            <Icon icon={Clock} size="lg" color={counts.pending > 0 ? 'warning' : 'secondary'} />
+            <VStack gap={0.5}>
+              <Text type="supporting" size="base" color="secondary" weight="semibold">
+                {t('history.statPendingOrders')}
+              </Text>
+              {showColdSkeleton ? (
+                <Skeleton width={56} height={32} />
+              ) : (
+                <HStack gap={2} vAlign="center">
+                  <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
+                    {counts.pending}
+                  </Text>
+                  {counts.pending > 0 && (
+                    <StatusDot variant="warning" label="Active pending orders" isPulsing />
+                  )}
+                </HStack>
+              )}
+            </VStack>
+          </HStack>
+        </Card>
+      </Grid>
+
       <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
         <TabList
           value={statusFilter}
@@ -466,7 +536,7 @@ export const HistoryScreen: React.FC = () => {
           />
         </Card>
       ) : (
-        <>
+        <VStack key={statusFilter} width="100%" className="tabPanelMotion">
           <Card padding={0} className="desktopOnly">
             <Table
               data={filteredHistory}
@@ -516,7 +586,7 @@ export const HistoryScreen: React.FC = () => {
               ))}
             </List>
           </Card>
-        </>
+        </VStack>
       )}
 
       <AlertDialog

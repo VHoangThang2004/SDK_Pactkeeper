@@ -214,7 +214,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
           }
         >
           <HStack gap={1.5} vAlign="center">
-            <Text type="label" size="sm">
+            <Text type="label" size="base" weight="semibold">
               {item.label}
             </Text>
             <Icon icon={Lock} size="xsm" color="accent" />
@@ -238,7 +238,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
         }}
       >
         <HStack gap={1.5} vAlign="center">
-          <Text type="label" size="sm">
+          <Text type="label" size="base" weight="semibold">
             {item.label}
           </Text>
           {item.path === '/profile/missives' && unreadCount > 0 && (
@@ -382,8 +382,9 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
 
   return (
     <>
+      <VStack key={`route-bar-${location.pathname}`} className="routeAccentBar" />
       <AppShell variant="wash" height="auto" contentPadding={0} topNav={topNav}>
-        <VStack gap={6} width="100%" className="pageMotionWrap">
+        <VStack key={location.pathname} gap={6} width="100%" className="pageMotionWrap">
           {children}
 
           <Section variant="section" dividers={['top']} padding={6} width="100%">
@@ -395,7 +396,7 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
                       <Icon icon={pillar.icon} size="lg" color="accent" />
                       <VStack gap={1}>
                         <Heading level={4}>{pillar.title}</Heading>
-                        <Text type="supporting" size="sm" color="secondary" display="block">
+                        <Text type="supporting" size="base" color="secondary" display="block">
                           {pillar.description}
                         </Text>
                       </VStack>
@@ -407,11 +408,11 @@ export const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
               <Divider />
 
               <HStack hAlign="between" vAlign="center" gap={4} wrap="wrap" width="100%">
-                <VStack gap={0.5}>
-                  <Text type="supporting" size="sm" color="secondary" display="block">
+                <VStack gap={1}>
+                  <Text type="supporting" size="base" color="secondary" display="block">
                     © 2026 Pactkeeper Team — FPT University SEP490. {t('common.allRightsReserved')}
                   </Text>
-                  <Text type="supporting" size="xsm" color="disabled" display="block">
+                  <Text type="supporting" size="sm" color="secondary" display="block">
                     {t('common.footerDisclaimer')}
                   </Text>
                 </VStack>

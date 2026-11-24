@@ -69,11 +69,13 @@ export const PaymentResultScreen: React.FC<{ isSuccess: boolean }> = ({ isSucces
         <Card elevation="med" padding={6} maxWidth={560} width="100%">
           <VStack gap={5}>
             <VStack gap={3} hAlign="center">
-              <Icon
-                icon={isSuccess ? CheckCircle2 : XCircle}
-                size="lg"
-                color={isSuccess ? 'success' : 'error'}
-              />
+              <Center className="statusPopIn">
+                <Icon
+                  icon={isSuccess ? CheckCircle2 : XCircle}
+                  size="lg"
+                  color={isSuccess ? 'success' : 'error'}
+                />
+              </Center>
 
               <Heading level={2}>
                 {isSuccess ? t('paymentResult.successTitle') : t('paymentResult.cancelTitle')}
