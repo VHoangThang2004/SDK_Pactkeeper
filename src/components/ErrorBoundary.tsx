@@ -5,6 +5,31 @@ import { Card } from '@astryxdesign/core/Card';
 import { Center } from '@astryxdesign/core/Center';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Icon } from '@astryxdesign/core/Icon';
+import { useTranslation } from '../core/i18n';
+
+const ErrorFallbackView = ({ onReload }: { onReload: () => void }) => {
+  const { t } = useTranslation();
+
+  return (
+    <Center padding={6} minHeight="60dvh" width="100%">
+      <Card variant="default" padding={6} width="100%">
+        <EmptyState
+          icon={<Icon icon={AlertCircle} size="lg" color="accent" />}
+          title={t('common.errorBoundaryTitle')}
+          description={t('common.errorBoundaryDesc')}
+          actions={
+            <Button
+              variant="primary"
+              label={t('common.errorBoundaryReload')}
+              icon={<Icon icon={RotateCcw} size="sm" />}
+              onClick={onReload}
+            />
+          }
+        />
+      </Card>
+    </Center>
+  );
+};
 
 interface Props {
   children: ReactNode;
@@ -36,25 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return (
-        <Center padding={6} minHeight="60dvh" width="100%">
-          <Card variant="default" padding={6} width="100%">
-            <EmptyState
-              icon={<Icon icon={AlertCircle} size="lg" color="accent" />}
-              title="Display Issue Recovered"
-              description="A temporary display issue occurred. Please reload to refresh the interface."
-              actions={
-                <Button
-                  variant="primary"
-                  label="Reload Interface"
-                  icon={<Icon icon={RotateCcw} size="sm" />}
-                  onClick={this.handleReload}
-                />
-              }
-            />
-          </Card>
-        </Center>
-      );
+      return <ErrorFallbackView onReload={this.handleReload} />;
     }
 
     return this.props.children;

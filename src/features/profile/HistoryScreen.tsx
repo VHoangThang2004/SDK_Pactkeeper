@@ -6,14 +6,19 @@ import {
   ExternalLink,
   XCircle,
   Gem,
+  Receipt,
+  MessageSquare,
 } from 'lucide-react';
 import { AlertDialog } from '@astryxdesign/core/AlertDialog';
 import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
+import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
-import { Heading } from '@astryxdesign/core/Heading';
+import { Icon } from '@astryxdesign/core/Icon';
+import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout';
 import { List, ListItem } from '@astryxdesign/core/List';
+import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
@@ -22,28 +27,21 @@ import { Table, proportional, type TableColumn } from '@astryxdesign/core/Table'
 import { Text } from '@astryxdesign/core/Text';
 import { useToast } from '@astryxdesign/core/Toast';
 import { apiClient } from '../../core/network/apiClient';
+import { useAuthStore } from '../../store/authStore';
+import { usePortalDataStore, type PaymentHistory } from '../../store/portalDataStore';
 import { useSyncStore } from '../../store/syncStore';
-import { useTranslation } from '../../core/i18n';
-
-interface PaymentHistory extends Record<string, unknown> {
-  orderCode: string;
-  amount: number;
-  gemsAmount: number;
-  status: string;
-  createdAt: string;
-  checkoutUrl?: string;
-}
+import { useTranslation, type Language } from '../../core/i18n';
 
 type StatusFilter = 'all' | 'completed' | 'pending' | 'cancelled';
 
 const PAYOS_EXPIRY_MS = 15 * 60 * 1000; // Standard PayOS payment window: 15 minutes
 
-const formatTxnTime = (dateStr?: string): string => {
+const formatTxnTime = (dateStr: string | undefined, language: Language): string => {
   if (!dateStr) return '';
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return '';
-    return d.toLocaleString('vi-VN', {
+    return d.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -57,67 +55,59 @@ const formatTxnTime = (dateStr?: string): string => {
 export const HistoryScreen: React.FC = () => {
   const navigate = useNavigate();
   const showToast = useToast();
-  const { t, isVietnamese } = useTranslation();
+  const { t, language } = useTranslation();
+  const { username, playerId } = useAuthStore();
+  const { history, historyLoaded, fetchHistory, setHistory } = usePortalDataStore();
+  const { profileUpdateTimestamp } = useSyncStore();
 
-  const [history, setHistory] = useState<PaymentHistory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [cancelTargetOrder, setCancelTargetOrder] = useState<string | null>(null);
+  const [receiptOrder, setReceiptOrder] = useState<PaymentHistory | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
-  const { profileUpdateTimestamp } = useSyncStore();
-
-  const fetchHistory = useCallback(async (isInitial = false) => {
-    if (isInitial) {
-      setIsLoading(true);
-    } else {
-      setIsRefreshing(true);
-    }
-    try {
-      const response = await apiClient.get<PaymentHistory[]>('/api/payment/history');
-      setHistory(response.data || []);
-    } catch (err) {
-      console.error('Error fetching history:', err);
-    } finally {
-      if (isInitial) {
-        setIsLoading(false);
-      } else {
-        setIsRefreshing(false);
+  const syncHistory = useCallback(
+    async (showSpinner = false) => {
+      if (showSpinner) setIsRefreshing(true);
+      try {
+        await fetchHistory();
+      } finally {
+        if (showSpinner) setIsRefreshing(false);
       }
-    }
-  }, []);
+    },
+    [fetchHistory]
+  );
 
   useEffect(() => {
-    fetchHistory(true);
-  }, [fetchHistory]);
+    syncHistory(false);
+  }, [syncHistory]);
 
   useEffect(() => {
     if (profileUpdateTimestamp > 0) {
-      fetchHistory(false);
+      syncHistory(false);
     }
-  }, [profileUpdateTimestamp, fetchHistory]);
+  }, [profileUpdateTimestamp, syncHistory]);
 
   useEffect(() => {
-    const handleFocus = () => fetchHistory(false);
+    const handleFocus = () => syncHistory(false);
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [fetchHistory]);
+  }, [syncHistory]);
 
   useEffect(() => {
-    const hasPending = history.some((h) => h.status.toUpperCase() === 'PENDING');
+    const hasPending = history.some((h) => (h.status || '').trim().toUpperCase() === 'PENDING');
     if (!hasPending) return;
 
     const interval = setInterval(() => {
-      fetchHistory(false);
+      syncHistory(false);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [history, fetchHistory]);
+  }, [history, syncHistory]);
 
   useEffect(() => {
-    const hasPending = history.some((h) => h.status.toUpperCase() === 'PENDING');
+    const hasPending = history.some((h) => (h.status || '').trim().toUpperCase() === 'PENDING');
     if (!hasPending) return;
 
     const timer = setInterval(() => {
@@ -141,19 +131,22 @@ export const HistoryScreen: React.FC = () => {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  // Exhaustive, mutually exclusive classification so tab counts always match rendered rows
   const classifyOrder = useCallback(
     (txn: PaymentHistory) => {
-      const upper = txn.status.toUpperCase();
-      const isCompleted = upper === 'CONFIRMED' || upper === 'PAID';
-      const isPending = upper === 'PENDING';
+      const upper = (txn.status || '').trim().toUpperCase();
+      const isCompleted = upper === 'CONFIRMED' || upper === 'PAID' || upper === 'COMPLETED';
+      const isPending = upper === 'PENDING' || upper === 'PROCESSING';
       const remainingSec = getRemainingSeconds(txn.createdAt);
-      const isExpired = isPending && remainingSec <= 0;
+      const isExpired = (isPending && remainingSec <= 0) || upper === 'EXPIRED';
+      const isFailed = upper === 'FAILED';
       const isActivePending = isPending && !isExpired;
-      const isCancelledOrExpired = upper === 'CANCELLED' || isExpired;
+      const isCancelledOrExpired = !isCompleted && !isActivePending;
       return {
         isCompleted,
         isActivePending,
         isExpired,
+        isFailed,
         isCancelledOrExpired,
         remainingSec,
       };
@@ -169,7 +162,7 @@ export const HistoryScreen: React.FC = () => {
       const state = classifyOrder(txn);
       if (state.isCompleted) completed++;
       else if (state.isActivePending) pending++;
-      else if (state.isCancelledOrExpired) cancelled++;
+      else cancelled++;
     }
     return { all: history.length, completed, pending, cancelled };
   }, [history, classifyOrder]);
@@ -190,14 +183,21 @@ export const HistoryScreen: React.FC = () => {
     (checkoutUrl?: string) => {
       if (!checkoutUrl) {
         showToast({
-          body: 'Payment link unavailable for this order. Please initiate a new order.',
+          body: t('history.paymentLinkUnavailable'),
           type: 'error',
         });
         return;
       }
       window.location.href = checkoutUrl;
     },
-    [showToast]
+    [showToast, t]
+  );
+
+  const handleReportIssue = useCallback(
+    (orderCode: string) => {
+      navigate('/profile/support', { state: { prefillOrderCode: orderCode } });
+    },
+    [navigate]
   );
 
   const handleConfirmCancelOrder = async () => {
@@ -212,7 +212,7 @@ export const HistoryScreen: React.FC = () => {
           )
         );
         showToast({
-          body: `Pending order TXN-${cancelTargetOrder} has been cancelled.`,
+          body: t('history.cancelSuccess', { orderCode: cancelTargetOrder }),
           type: 'info',
         });
         setCancelTargetOrder(null);
@@ -221,7 +221,9 @@ export const HistoryScreen: React.FC = () => {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       console.error('Failed to cancel order:', err);
       showToast({
-        body: axiosErr.response?.data?.message || 'Failed to cancel the pending order.',
+        body:
+          axiosErr.response?.data?.message ||
+          t('history.cancelError', { orderCode: cancelTargetOrder }),
         type: 'error',
       });
     } finally {
@@ -231,7 +233,8 @@ export const HistoryScreen: React.FC = () => {
 
   const renderStatus = useCallback(
     (txn: PaymentHistory) => {
-      const { isCompleted, isActivePending, isExpired, remainingSec } = classifyOrder(txn);
+      const { isCompleted, isActivePending, isExpired, isFailed, remainingSec } =
+        classifyOrder(txn);
       if (isCompleted) {
         return (
           <HStack gap={2} vAlign="center">
@@ -252,16 +255,74 @@ export const HistoryScreen: React.FC = () => {
           </HStack>
         );
       }
+      const statusLabel = isExpired
+        ? t('history.statusExpired')
+        : isFailed
+          ? t('history.statusFailed')
+          : t('history.statusCancelled');
       return (
         <HStack gap={2} vAlign="center">
-          <StatusDot variant="error" label={isExpired ? 'Order expired' : 'Order cancelled'} />
+          <StatusDot variant="error" label={statusLabel} />
           <Text size="sm" color="secondary">
-            {isExpired ? t('history.statusExpired') : t('history.statusCancelled')}
+            {statusLabel}
           </Text>
         </HStack>
       );
     },
     [classifyOrder, t]
+  );
+
+  const renderActions = useCallback(
+    (txn: PaymentHistory) => {
+      const { isCompleted, isActivePending } = classifyOrder(txn);
+      if (isActivePending) {
+        return (
+          <HStack gap={2} hAlign="end" wrap="wrap">
+            {txn.checkoutUrl && (
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Icon icon={ExternalLink} size="xsm" />}
+                label={t('history.payWithVietQr')}
+                onClick={() => handlePayNow(txn.checkoutUrl)}
+              />
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<Icon icon={XCircle} size="xsm" />}
+              label={t('history.cancelOrder')}
+              onClick={() => setCancelTargetOrder(txn.orderCode)}
+            />
+          </HStack>
+        );
+      }
+      if (isCompleted) {
+        return (
+          <HStack gap={2} hAlign="end" wrap="wrap">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Icon icon={Receipt} size="xsm" />}
+              label={t('history.viewReceipt')}
+              onClick={() => setReceiptOrder(txn)}
+            />
+          </HStack>
+        );
+      }
+      return (
+        <HStack gap={2} hAlign="end" wrap="wrap">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Icon icon={MessageSquare} size="xsm" />}
+            label={t('history.reportIssue')}
+            onClick={() => handleReportIssue(txn.orderCode)}
+          />
+        </HStack>
+      );
+    },
+    [classifyOrder, handlePayNow, handleReportIssue, t]
   );
 
   const columns: TableColumn<PaymentHistory>[] = useMemo(
@@ -276,7 +337,7 @@ export const HistoryScreen: React.FC = () => {
               TXN-{txn.orderCode}
             </Text>
             <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
-              {formatTxnTime(txn.createdAt)}
+              {formatTxnTime(txn.createdAt, language)}
             </Text>
           </VStack>
         ),
@@ -286,19 +347,23 @@ export const HistoryScreen: React.FC = () => {
         header: t('history.reward'),
         width: proportional(1.3, { minWidth: 150 }),
         renderCell: (txn) => {
-          const { isCompleted } = classifyOrder(txn);
+          const { isCompleted, isActivePending } = classifyOrder(txn);
           return (
             <VStack gap={0.5}>
               <HStack gap={1.5} vAlign="center">
-                <Gem size={14} aria-hidden="true" />
+                <Icon icon={Gem} size="xsm" color="accent" />
                 <Text weight="semibold" hasTabularNumbers>
                   {txn.gemsAmount > 0
-                    ? `+${txn.gemsAmount.toLocaleString('en-US')} Gem`
-                    : (isVietnamese ? 'Gói Khế Ước' : 'Pact Package')}
+                    ? `+${txn.gemsAmount.toLocaleString('en-US')} ${t('topup.gems')}`
+                    : t('history.pactPackage')}
                 </Text>
               </HStack>
               <Text type="supporting" size="2xs" color="secondary">
-                {isCompleted ? t('history.dispatchedToMail') : t('history.awaitingClearance')}
+                {isCompleted
+                  ? t('history.dispatchedToMail')
+                  : isActivePending
+                    ? t('history.awaitingClearance')
+                    : t('history.orderNotCompleted')}
               </Text>
             </VStack>
           );
@@ -306,7 +371,7 @@ export const HistoryScreen: React.FC = () => {
       },
       {
         key: 'amount',
-        header: t('history.paidTithe'),
+        header: t('history.amount'),
         align: 'end',
         width: proportional(1, { minWidth: 120 }),
         renderCell: (txn) => (
@@ -325,93 +390,59 @@ export const HistoryScreen: React.FC = () => {
         key: 'actions',
         header: t('history.actions'),
         align: 'end',
-        width: proportional(1.4, { minWidth: 180 }),
-        renderCell: (txn) => {
-          const { isActivePending } = classifyOrder(txn);
-          if (!isActivePending) {
-            return (
-              <Text type="supporting" size="xsm" color="secondary">
-                —
-              </Text>
-            );
-          }
-          return (
-            <HStack gap={2} hAlign="end" wrap="wrap">
-              {txn.checkoutUrl && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={<ExternalLink size={14} aria-hidden="true" />}
-                  label="VietQR"
-                  onClick={() => handlePayNow(txn.checkoutUrl)}
-                />
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={<XCircle size={14} aria-hidden="true" />}
-                label={t('history.cancelOrder')}
-                onClick={() => setCancelTargetOrder(txn.orderCode)}
-              />
-            </HStack>
-          );
-        },
+        width: proportional(1.5, { minWidth: 190 }),
+        renderCell: (txn) => renderActions(txn),
       },
     ],
-    [classifyOrder, handlePayNow, isVietnamese, renderStatus, t]
+    [classifyOrder, language, renderActions, renderStatus, t]
   );
+
+  const showColdSkeleton = !historyLoaded && history.length === 0;
 
   return (
     <VStack gap={5}>
       <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
-        <VStack gap={1}>
-          <Heading level={2}>{t('history.title')}</Heading>
-          <Text type="supporting" color="secondary">
-            {t('history.subtitle')}
-          </Text>
-        </VStack>
+        <TabList
+          value={statusFilter}
+          onChange={(val) => setStatusFilter(val as StatusFilter)}
+          hasDivider
+        >
+          <Tab
+            value="all"
+            label={t('history.tabAll')}
+            endContent={<Badge label={counts.all} />}
+          />
+          <Tab
+            value="completed"
+            label={t('history.tabCompleted')}
+            endContent={counts.completed > 0 ? <Badge label={counts.completed} /> : undefined}
+          />
+          <Tab
+            value="pending"
+            label={t('history.tabPending')}
+            endContent={
+              counts.pending > 0 ? <Badge label={counts.pending} variant="warning" /> : undefined
+            }
+          />
+          <Tab
+            value="cancelled"
+            label={t('history.tabCancelled')}
+            endContent={counts.cancelled > 0 ? <Badge label={counts.cancelled} /> : undefined}
+          />
+        </TabList>
 
         <Button
           variant="secondary"
           size="sm"
-          icon={<RefreshCw size={14} aria-hidden="true" />}
+          icon={<Icon icon={RefreshCw} size="xsm" />}
           label={isRefreshing ? t('history.syncing') : t('history.syncRecords')}
           isLoading={isRefreshing}
-          isDisabled={isLoading || isRefreshing}
-          onClick={() => fetchHistory(false)}
+          isDisabled={showColdSkeleton || isRefreshing}
+          onClick={() => syncHistory(true)}
         />
       </HStack>
 
-      <TabList
-        value={statusFilter}
-        onChange={(val) => setStatusFilter(val as StatusFilter)}
-        hasDivider
-      >
-        <Tab
-          value="all"
-          label={t('history.tabAll')}
-          endContent={<Badge label={counts.all} />}
-        />
-        <Tab
-          value="completed"
-          label={t('history.tabCompleted')}
-          endContent={counts.completed > 0 ? <Badge label={counts.completed} /> : undefined}
-        />
-        <Tab
-          value="pending"
-          label={t('history.tabPending')}
-          endContent={
-            counts.pending > 0 ? <Badge label={counts.pending} variant="warning" /> : undefined
-          }
-        />
-        <Tab
-          value="cancelled"
-          label={t('history.tabCancelled')}
-          endContent={counts.cancelled > 0 ? <Badge label={counts.cancelled} /> : undefined}
-        />
-      </TabList>
-
-      {isLoading && history.length === 0 ? (
+      {showColdSkeleton ? (
         <Card padding={5}>
           <VStack gap={3}>
             <Skeleton height={44} />
@@ -422,7 +453,7 @@ export const HistoryScreen: React.FC = () => {
       ) : filteredHistory.length === 0 ? (
         <Card padding={6}>
           <EmptyState
-            icon={<ScrollText size={32} aria-hidden="true" />}
+            icon={<Icon icon={ScrollText} size="lg" color="accent" />}
             title={t('history.emptyTitle')}
             description={t('history.emptyDesc')}
             actions={
@@ -449,60 +480,40 @@ export const HistoryScreen: React.FC = () => {
 
           <Card padding={0} className="mobileOnly">
             <List hasDividers edge="bleed">
-              {filteredHistory.map((txn) => {
-                const { isActivePending } = classifyOrder(txn);
-                return (
-                  <ListItem
-                    key={txn.orderCode}
-                    align="start"
-                    label={
-                      <HStack hAlign="between" vAlign="center" gap={2}>
-                        <Text weight="semibold" hasTabularNumbers>
-                          {txn.gemsAmount > 0
-                            ? `+${txn.gemsAmount.toLocaleString('en-US')} Gem`
-                            : (isVietnamese ? 'Gói Khế Ước' : 'Pact Package')}
+              {filteredHistory.map((txn) => (
+                <ListItem
+                  key={txn.orderCode}
+                  align="start"
+                  label={
+                    <HStack hAlign="between" vAlign="center" gap={2}>
+                      <Text weight="semibold" hasTabularNumbers>
+                        {txn.gemsAmount > 0
+                          ? `+${txn.gemsAmount.toLocaleString('en-US')} ${t('topup.gems')}`
+                          : t('history.pactPackage')}
+                      </Text>
+                      <Text weight="semibold" hasTabularNumbers>
+                        {txn.amount.toLocaleString('vi-VN')} VND
+                      </Text>
+                    </HStack>
+                  }
+                  description={
+                    <VStack gap={2}>
+                      <HStack hAlign="between" vAlign="center" wrap="wrap" gap={2}>
+                        <Text type="code" size="sm" color="secondary" hasTabularNumbers>
+                          TXN-{txn.orderCode}
                         </Text>
-                        <Text weight="semibold" hasTabularNumbers>
-                          {txn.amount.toLocaleString('vi-VN')} VND
+                        <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
+                          {formatTxnTime(txn.createdAt, language)}
                         </Text>
                       </HStack>
-                    }
-                    description={
-                      <VStack gap={2}>
-                        <HStack hAlign="between" vAlign="center" wrap="wrap" gap={2}>
-                          <Text type="code" size="sm" color="secondary" hasTabularNumbers>
-                            TXN-{txn.orderCode}
-                          </Text>
-                          <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
-                            {formatTxnTime(txn.createdAt)}
-                          </Text>
-                        </HStack>
-                        {renderStatus(txn)}
-                        {isActivePending && (
-                          <HStack gap={2} wrap="wrap">
-                            {txn.checkoutUrl && (
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                icon={<ExternalLink size={14} aria-hidden="true" />}
-                                label="VietQR"
-                                onClick={() => handlePayNow(txn.checkoutUrl)}
-                              />
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              icon={<XCircle size={14} aria-hidden="true" />}
-                              label={t('history.cancelOrder')}
-                              onClick={() => setCancelTargetOrder(txn.orderCode)}
-                            />
-                          </HStack>
-                        )}
-                      </VStack>
-                    }
-                  />
-                );
-              })}
+                      {renderStatus(txn)}
+                      <HStack gap={2} wrap="wrap">
+                        {renderActions(txn)}
+                      </HStack>
+                    </VStack>
+                  }
+                />
+              ))}
             </List>
           </Card>
         </>
@@ -514,17 +525,96 @@ export const HistoryScreen: React.FC = () => {
           if (!open && !isCancelling) setCancelTargetOrder(null);
         }}
         title={t('history.cancelConfirmTitle')}
-        description={
-          isVietnamese
-            ? `Bạn có chắc chắn muốn hủy đơn hàng TXN-${cancelTargetOrder ?? ''}? Mã thanh toán PayOS VietQR sẽ bị vô hiệu hóa ngay lập tức.`
-            : `Are you sure you want to cancel pending order TXN-${cancelTargetOrder ?? ''}? The PayOS VietQR link will be invalidated immediately.`
-        }
+        description={t('history.cancelConfirmDesc', { orderCode: cancelTargetOrder ?? '' })}
         actionLabel={t('history.cancelOrder')}
         cancelLabel={t('history.keepOrder')}
         actionVariant="destructive"
         isActionLoading={isCancelling}
         onAction={handleConfirmCancelOrder}
       />
+
+      <Dialog
+        isOpen={Boolean(receiptOrder)}
+        onOpenChange={(open) => {
+          if (!open) setReceiptOrder(null);
+        }}
+        width={460}
+        purpose="info"
+      >
+        {receiptOrder && (
+          <Layout
+            height="auto"
+            defaultHasDividers={false}
+            header={
+              <DialogHeader
+                title={t('history.receiptTitle')}
+                subtitle={t('history.receiptSubtitle')}
+                startContent={<Icon icon={Receipt} color="accent" size="md" />}
+                onOpenChange={(open) => {
+                  if (!open) setReceiptOrder(null);
+                }}
+                hasDivider
+              />
+            }
+            content={
+              <LayoutContent isScrollable={false}>
+                <MetadataList>
+                  <MetadataListItem label={t('history.order')}>
+                    <Text type="code" hasTabularNumbers>
+                      TXN-{receiptOrder.orderCode}
+                    </Text>
+                  </MetadataListItem>
+                  <MetadataListItem label={t('history.reward')}>
+                    <Text weight="semibold" hasTabularNumbers>
+                      {receiptOrder.gemsAmount > 0
+                        ? `+${receiptOrder.gemsAmount.toLocaleString('en-US')} ${t('topup.gems')}`
+                        : t('history.pactPackage')}
+                    </Text>
+                  </MetadataListItem>
+                  <MetadataListItem label={t('history.amount')}>
+                    <Text weight="semibold" hasTabularNumbers>
+                      {receiptOrder.amount.toLocaleString('vi-VN')} VND
+                    </Text>
+                  </MetadataListItem>
+                  <MetadataListItem label={t('history.receiptRecipient')}>
+                    {username || t('common.player')} ({playerId || t('common.currentAccount')})
+                  </MetadataListItem>
+                  <MetadataListItem label={t('history.receiptPaymentMethod')}>
+                    PayOS (VietQR / Napas 247)
+                  </MetadataListItem>
+                  <MetadataListItem label={t('history.receiptDelivery')}>
+                    {t('history.receiptDeliveryDone')}
+                  </MetadataListItem>
+                  <MetadataListItem label={t('history.receiptTime')}>
+                    {formatTxnTime(receiptOrder.createdAt, language)}
+                  </MetadataListItem>
+                </MetadataList>
+              </LayoutContent>
+            }
+            footer={
+              <LayoutFooter hasDivider>
+                <HStack gap={2} hAlign="end" width="100%">
+                  <Button
+                    label={t('history.reportIssue')}
+                    variant="secondary"
+                    icon={<Icon icon={MessageSquare} size="xsm" />}
+                    onClick={() => {
+                      const code = receiptOrder.orderCode;
+                      setReceiptOrder(null);
+                      handleReportIssue(code);
+                    }}
+                  />
+                  <Button
+                    label={t('common.close')}
+                    variant="primary"
+                    onClick={() => setReceiptOrder(null)}
+                  />
+                </HStack>
+              </LayoutFooter>
+            }
+          />
+        )}
+      </Dialog>
     </VStack>
   );
 };

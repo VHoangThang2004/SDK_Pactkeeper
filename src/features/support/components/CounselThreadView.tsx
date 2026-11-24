@@ -1,6 +1,9 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Bot, Paperclip, ShieldCheck, HelpCircle } from 'lucide-react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Bot, Paperclip, ShieldCheck, HelpCircle, Receipt, Clock } from 'lucide-react';
 import { Avatar } from '@astryxdesign/core/Avatar';
+import { Banner } from '@astryxdesign/core/Banner';
+import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
 import {
   ChatComposer,
@@ -11,8 +14,11 @@ import {
 } from '@astryxdesign/core/Chat';
 import { Collapsible, CollapsibleGroup } from '@astryxdesign/core/Collapsible';
 import { Divider } from '@astryxdesign/core/Divider';
+import { DropdownMenu } from '@astryxdesign/core/DropdownMenu';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
-import { IconButton } from '@astryxdesign/core/IconButton';
+import { Grid } from '@astryxdesign/core/Grid';
+import { Heading } from '@astryxdesign/core/Heading';
+import { Icon } from '@astryxdesign/core/Icon';
 import { Lightbox } from '@astryxdesign/core/Lightbox';
 import { HStack, VStack } from '@astryxdesign/core/Stack';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
@@ -21,15 +27,20 @@ import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Token } from '@astryxdesign/core/Token';
 import { useToast } from '@astryxdesign/core/Toast';
 import { apiClient } from '../../../core/network/apiClient';
+import { usePortalDataStore } from '../../../store/portalDataStore';
 import { useSyncStore } from '../../../store/syncStore';
 import { useTranslation } from '../../../core/i18n';
 import { supportHubService, type SupportMessageDto } from '../services/SupportHubService';
 import { resolveSupportAttachmentUrl } from '../supportMedia';
 
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB
+
 export const CounselThreadView: React.FC = () => {
+  const location = useLocation();
   const showToast = useToast();
   const { setHasUnreadCounsel } = useSyncStore();
-  const { t, isVietnamese } = useTranslation();
+  const { history, historyLoaded, fetchHistory } = usePortalDataStore();
+  const { t } = useTranslation();
 
   const [messages, setMessages] = useState<SupportMessageDto[]>([]);
   const [inputText, setInputText] = useState('');
@@ -39,10 +50,30 @@ export const CounselThreadView: React.FC = () => {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prefilledRef = useRef<string | null>(null);
 
   useEffect(() => {
     setHasUnreadCounsel(false);
   }, [setHasUnreadCounsel]);
+
+  useEffect(() => {
+    if (!historyLoaded) {
+      fetchHistory();
+    }
+  }, [historyLoaded, fetchHistory]);
+
+  // Support pre-filling Order ID when navigating from Order History -> Report Issue
+  useEffect(() => {
+    const prefillOrderCode = (location.state as { prefillOrderCode?: string } | null)
+      ?.prefillOrderCode;
+    if (prefillOrderCode && prefilledRef.current !== prefillOrderCode) {
+      prefilledRef.current = prefillOrderCode;
+      setInputText((prev) => {
+        const tag = `[TXN-${prefillOrderCode}] `;
+        return prev.includes(prefillOrderCode) ? prev : `${tag}${prev}`;
+      });
+    }
+  }, [location.state]);
 
   const syncChatHistory = useCallback(async () => {
     try {
@@ -107,6 +138,41 @@ export const CounselThreadView: React.FC = () => {
     };
   }, [syncChatHistory]);
 
+  const handleInsertOrderRef = useCallback(
+    (orderCode: string) => {
+      setInputText((prev) => {
+        const tag = `[TXN-${orderCode}]`;
+        if (prev.includes(tag)) return prev;
+        return prev.trim().length > 0 ? `${prev.trim()} ${tag} ` : `${tag} `;
+      });
+      showToast({
+        body: t('counsel.orderRefInserted', { orderCode }),
+        type: 'info',
+      });
+    },
+    [showToast, t]
+  );
+
+  const recentOrderMenuItems = useMemo(() => {
+    const recent = history.slice(0, 6);
+    if (recent.length === 0) {
+      return [
+        {
+          id: 'no-orders',
+          label: t('counsel.noRecentOrders'),
+          isDisabled: true,
+        },
+      ];
+    }
+    return recent.map((txn) => ({
+      id: `order-${txn.orderCode}`,
+      label: `TXN-${txn.orderCode}`,
+      description: `${txn.amount.toLocaleString('vi-VN')} VND · ${txn.status}`,
+      icon: <Icon icon={Receipt} size="xsm" />,
+      onClick: () => handleInsertOrderRef(txn.orderCode),
+    }));
+  }, [history, handleInsertOrderRef, t]);
+
   const handleSend = async (rawValue: string) => {
     const trimmed = rawValue.trim();
     if (!trimmed || isSending) return;
@@ -129,7 +195,7 @@ export const CounselThreadView: React.FC = () => {
       console.error('Failed to send message:', err);
       setInputText(trimmed);
       showToast({
-        body: 'Could not deliver your message. Please try again.',
+        body: t('counsel.sendFailedToast'),
         type: 'error',
       });
     } finally {
@@ -140,6 +206,15 @@ export const CounselThreadView: React.FC = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      showToast({
+        body: t('counsel.imageTooLarge'),
+        type: 'error',
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
 
     setIsUploading(true);
     const formData = new FormData();
@@ -167,7 +242,7 @@ export const CounselThreadView: React.FC = () => {
     } catch (error) {
       console.error('Image upload failed:', error);
       showToast({
-        body: 'Could not upload the image attachment. Please try a smaller image.',
+        body: t('counsel.uploadFailedToast'),
         type: 'error',
       });
     } finally {
@@ -177,183 +252,211 @@ export const CounselThreadView: React.FC = () => {
   };
 
   return (
-    <Card padding={0} elevation="low" className="chatShell">
-      <HStack hAlign="between" vAlign="center" gap={3} padding={4}>
-        <HStack gap={3} vAlign="center">
-          <Avatar name={t('counsel.keeperOfRecords')} size="sm" />
-          <VStack gap={0.5}>
-            <HStack gap={2} vAlign="center" wrap="wrap">
-              <Text weight="semibold">{t('counsel.keeperOfRecords')}</Text>
-              <Token
-                icon={<ShieldCheck size={12} aria-hidden="true" />}
-                label={t('counsel.officialGm')}
-                size="sm"
-              />
-            </HStack>
+    <Grid gap={5} className="supportGrid">
+      <Card padding={0} elevation="low" className="chatShell">
+        <HStack hAlign="between" vAlign="center" gap={3} padding={4}>
+          <HStack gap={3} vAlign="center">
+            <Avatar name={t('counsel.keeperOfRecords')} size="sm" />
+            <VStack gap={0.5}>
+              <HStack gap={2} vAlign="center" wrap="wrap">
+                <Text weight="semibold">{t('counsel.keeperOfRecords')}</Text>
+                <Token
+                  icon={<Icon icon={ShieldCheck} size="xsm" />}
+                  label={t('counsel.officialGm')}
+                  size="sm"
+                />
+              </HStack>
+              <Text type="supporting" size="2xs" color="secondary">
+                {isConnected ? t('counsel.liveCounselOnline') : t('counsel.activeCounselService')}
+              </Text>
+            </VStack>
+          </HStack>
+
+          <HStack gap={1.5} vAlign="center">
+            <StatusDot
+              variant={isConnected ? 'success' : 'warning'}
+              label={isConnected ? t('counsel.onlineNotice') : t('counsel.disconnectedNotice')}
+              isPulsing={isConnected}
+            />
             <Text type="supporting" size="2xs" color="secondary">
-              {isConnected ? t('counsel.liveCounselOnline') : t('counsel.activeCounselService')}
-            </Text>
-          </VStack>
-        </HStack>
-
-        <HStack gap={1.5} vAlign="center">
-          <StatusDot
-            variant={isConnected ? 'success' : 'warning'}
-            label={isConnected ? 'Real-time connection active' : 'Syncing messages'}
-            isPulsing={isConnected}
-          />
-          <Text type="supporting" size="2xs" color="secondary">
-            {isConnected ? (isVietnamese ? 'Trực tuyến' : 'Live') : (isVietnamese ? 'Đang đồng bộ' : 'Syncing')}
-          </Text>
-        </HStack>
-      </HStack>
-
-      <Divider />
-
-      <Collapsible
-        trigger={
-          <HStack gap={2} vAlign="center" padding={3}>
-            <HelpCircle size={15} aria-hidden="true" />
-            <Text weight="medium" size="sm">
-              {t('counsel.faqTitle')}
+              {isConnected ? t('counsel.statusLive') : t('counsel.statusSyncing')}
             </Text>
           </HStack>
-        }
-        defaultIsOpen={false}
-      >
-        <Card padding={3} variant="muted">
-          <CollapsibleGroup type="single" hasDividers>
-            <Collapsible
-              value="faq-delivery"
-              trigger={<Text size="sm" weight="medium">{t('counsel.faq1Q')}</Text>}
-            >
-              <Text type="supporting" size="sm" color="secondary">
-                {t('counsel.faq1A')}
-              </Text>
-            </Collapsible>
-            <Collapsible
-              value="faq-vietqr"
-              trigger={<Text size="sm" weight="medium">{t('counsel.faq2Q')}</Text>}
-            >
-              <Text type="supporting" size="sm" color="secondary">
-                {t('counsel.faq2A')}
-              </Text>
-            </Collapsible>
-            <Collapsible
-              value="faq-support"
-              trigger={<Text size="sm" weight="medium">{t('counsel.faq3Q')}</Text>}
-            >
-              <Text type="supporting" size="sm" color="secondary">
-                {t('counsel.faq3A')}
-              </Text>
-            </Collapsible>
-          </CollapsibleGroup>
+        </HStack>
+
+        <Divider />
+
+        <input
+          type="file"
+          accept="image/*"
+          className="hiddenInput"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+        />
+
+        <VStack className="chatBody">
+          <ChatLayout
+            density="balanced"
+            emptyState={
+              <EmptyState
+                icon={<Icon icon={Bot} size="lg" color="accent" />}
+                title={t('counsel.emptyChatTitle')}
+                description={t('counsel.emptyChatDesc')}
+              />
+            }
+            composer={
+              <ChatComposer
+                value={inputText}
+                onChange={setInputText}
+                onSubmit={handleSend}
+                isDisabled={isUploading || isSending}
+                placeholder={
+                  isUploading
+                    ? t('counsel.uploading')
+                    : isSending
+                      ? t('counsel.sending')
+                      : t('counsel.inputPlaceholder')
+                }
+                footerActions={
+                  <HStack gap={2} vAlign="center" wrap="wrap">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<Icon icon={Paperclip} size="xsm" />}
+                      label={t('counsel.attachImage')}
+                      isLoading={isUploading}
+                      isDisabled={isUploading || isSending}
+                      onClick={() => fileInputRef.current?.click()}
+                    />
+                    <DropdownMenu
+                      button={{
+                        variant: 'secondary',
+                        size: 'sm',
+                        label: t('counsel.attachOrder'),
+                        icon: <Icon icon={Receipt} size="xsm" />,
+                      }}
+                      items={recentOrderMenuItems}
+                    />
+                  </HStack>
+                }
+              />
+            }
+          >
+            {messages.length > 0 && (
+              <ChatMessageList>
+                {messages.map((msg) => {
+                  const self = msg.sender.toLowerCase() === 'user';
+                  const resolvedImg = resolveSupportAttachmentUrl(msg.attachmentUrl);
+
+                  return (
+                    <ChatMessage
+                      key={msg.id}
+                      sender={self ? 'user' : 'assistant'}
+                      name={self ? t('counsel.you') : t('counsel.keeperOfRecords')}
+                      metadata={
+                        <HStack gap={1.5} vAlign="center">
+                          <Timestamp
+                            value={msg.createdAt}
+                            format="time"
+                            size="2xs"
+                            color="secondary"
+                          />
+                          {self && (
+                            <Text type="supporting" size="2xs" color="secondary">
+                              · {t('counsel.sentLabel')}
+                            </Text>
+                          )}
+                        </HStack>
+                      }
+                    >
+                      <ChatMessageBubble>
+                        <VStack gap={2}>
+                          {msg.text && <Text color="inherit">{msg.text}</Text>}
+                          {resolvedImg && (
+                            <button
+                              type="button"
+                              className="attachmentBtn"
+                              onClick={() => setLightboxSrc(resolvedImg)}
+                              aria-label={t('counsel.attachImage')}
+                            >
+                              <img
+                                src={resolvedImg}
+                                alt={t('counsel.attachImage')}
+                                className="attachmentImg"
+                              />
+                            </button>
+                          )}
+                        </VStack>
+                      </ChatMessageBubble>
+                    </ChatMessage>
+                  );
+                })}
+              </ChatMessageList>
+            )}
+          </ChatLayout>
+        </VStack>
+
+        <Lightbox
+          isOpen={Boolean(lightboxSrc)}
+          onOpenChange={(open) => {
+            if (!open) setLightboxSrc(null);
+          }}
+          media={
+            lightboxSrc
+              ? { src: lightboxSrc, alt: t('counsel.attachImage'), type: 'image' }
+              : []
+          }
+          hasZoom
+        />
+      </Card>
+
+      {/* Right sidebar: SLA & Quick Payment FAQ */}
+      <VStack gap={4} className="supportSidebar">
+        <Banner
+          status="info"
+          icon={<Icon icon={Clock} size="sm" />}
+          title={t('counsel.slaBannerTitle')}
+          description={t('counsel.slaBannerDesc')}
+        />
+
+        <Card padding={4} elevation="low">
+          <VStack gap={3}>
+            <HStack gap={2} vAlign="center">
+              <Icon icon={HelpCircle} size="sm" color="accent" />
+              <Heading level={4}>{t('counsel.faqTitle')}</Heading>
+            </HStack>
+
+            <Divider />
+
+            <CollapsibleGroup type="single" hasDividers>
+              <Collapsible
+                value="faq-delivery"
+                trigger={<Text size="sm" weight="medium">{t('counsel.faq1Q')}</Text>}
+              >
+                <Text type="supporting" size="sm" color="secondary">
+                  {t('counsel.faq1A')}
+                </Text>
+              </Collapsible>
+              <Collapsible
+                value="faq-vietqr"
+                trigger={<Text size="sm" weight="medium">{t('counsel.faq2Q')}</Text>}
+              >
+                <Text type="supporting" size="sm" color="secondary">
+                  {t('counsel.faq2A')}
+                </Text>
+              </Collapsible>
+              <Collapsible
+                value="faq-support"
+                trigger={<Text size="sm" weight="medium">{t('counsel.faq3Q')}</Text>}
+              >
+                <Text type="supporting" size="sm" color="secondary">
+                  {t('counsel.faq3A')}
+                </Text>
+              </Collapsible>
+            </CollapsibleGroup>
+          </VStack>
         </Card>
-      </Collapsible>
-
-      <Divider />
-
-      <input
-        type="file"
-        accept="image/*"
-        className="hiddenInput"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-      />
-
-      <VStack className="chatBody">
-        <ChatLayout
-          density="balanced"
-          emptyState={
-            <EmptyState
-              icon={<Bot size={32} aria-hidden="true" />}
-              title={t('counsel.emptyChatTitle')}
-              description={t('counsel.emptyChatDesc')}
-            />
-          }
-          composer={
-            <ChatComposer
-              value={inputText}
-              onChange={setInputText}
-              onSubmit={handleSend}
-              isDisabled={isUploading || isSending}
-              placeholder={
-                isUploading
-                  ? t('counsel.uploading')
-                  : t('counsel.inputPlaceholder')
-              }
-              footerActions={
-                <IconButton
-                  icon={<Paperclip size={16} aria-hidden="true" />}
-                  variant="ghost"
-                  size="sm"
-                  label={t('counsel.attachImage')}
-                  isDisabled={isUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                />
-              }
-            />
-          }
-        >
-          {messages.length > 0 && (
-            <ChatMessageList>
-              {messages.map((msg) => {
-                const self = msg.sender.toLowerCase() === 'user';
-                const resolvedImg = resolveSupportAttachmentUrl(msg.attachmentUrl);
-
-                return (
-                  <ChatMessage
-                    key={msg.id}
-                    sender={self ? 'user' : 'assistant'}
-                    name={self ? t('counsel.you') : t('counsel.keeperOfRecords')}
-                    metadata={
-                      <Timestamp
-                        value={msg.createdAt}
-                        format="time"
-                        size="2xs"
-                        color="secondary"
-                      />
-                    }
-                  >
-                    <ChatMessageBubble>
-                      <VStack gap={2}>
-                        {msg.text && <Text color="inherit">{msg.text}</Text>}
-                        {resolvedImg && (
-                          <button
-                            type="button"
-                            className="attachmentBtn"
-                            onClick={() => setLightboxSrc(resolvedImg)}
-                            aria-label="Inspect image attachment"
-                          >
-                            <img
-                              src={resolvedImg}
-                              alt="Support attachment"
-                              className="attachmentImg"
-                            />
-                          </button>
-                        )}
-                      </VStack>
-                    </ChatMessageBubble>
-                  </ChatMessage>
-                );
-              })}
-            </ChatMessageList>
-          )}
-        </ChatLayout>
       </VStack>
-
-      <Lightbox
-        isOpen={Boolean(lightboxSrc)}
-        onOpenChange={(open) => {
-          if (!open) setLightboxSrc(null);
-        }}
-        media={
-          lightboxSrc
-            ? { src: lightboxSrc, alt: 'Support attachment', type: 'image' }
-            : []
-        }
-        hasZoom
-      />
-    </Card>
+    </Grid>
   );
 };

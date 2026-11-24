@@ -40,6 +40,22 @@
 }
 
 @layer product {
+  /* Brand Logo */
+  .brandLogoNav {
+    width: 2.35rem;
+    height: 2.35rem;
+    object-fit: contain;
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .brandLogoLogin {
+    width: 5.5rem;
+    height: 5.5rem;
+    object-fit: contain;
+    display: block;
+  }
+
   /* Navigation Shell & Breathing Room */
   .astryx-app-shell-header {
     padding-inline: var(--spacing-6);
@@ -108,6 +124,22 @@
   }
 
   /* Support Chat & Counsel */
+  .supportGrid {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  @media (min-width: 960px) {
+    .supportGrid {
+      grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    }
+  }
+
+  .supportSidebar {
+    position: sticky;
+    top: var(--spacing-4);
+  }
+
   .chatShell {
     display: flex;
     flex-direction: column;
@@ -115,6 +147,17 @@
     min-height: 30rem;
     max-height: 52rem;
     overflow: hidden;
+  }
+
+  /* Improve dark-mode contrast for chat inputs & bubbles */
+  [data-theme="dark"] .chatShell textarea::placeholder,
+  [data-theme="dark"] .chatShell input::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.9;
+  }
+
+  [data-theme="dark"] .chatShell {
+    border: 1px solid var(--color-border-emphasized);
   }
 
   .chatBody {

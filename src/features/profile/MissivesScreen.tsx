@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BellOff,
   CheckCircle2,
@@ -9,39 +10,45 @@ import {
   Mail,
   Inbox,
   Radio,
+  Receipt,
 } from 'lucide-react';
 import { Badge } from '@astryxdesign/core/Badge';
 import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Grid } from '@astryxdesign/core/Grid';
-import { Heading } from '@astryxdesign/core/Heading';
 import { Icon } from '@astryxdesign/core/Icon';
 import { HStack, VStack } from '@astryxdesign/core/Layout';
 import { List, ListItem } from '@astryxdesign/core/List';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
+import { Tab, TabList } from '@astryxdesign/core/TabList';
 import { Text } from '@astryxdesign/core/Text';
+import { Token } from '@astryxdesign/core/Token';
 import { apiClient } from '../../core/network/apiClient';
 import { supportHubService } from '../support/services/SupportHubService';
-import { useSyncStore } from '../../store/syncStore';
-import { useTranslation } from '../../core/i18n';
+import { usePortalDataStore, type NotificationModel } from '../../store/portalDataStore';
+import { useTranslation, type Language } from '../../core/i18n';
 
-interface NotificationModel {
-  id: string;
-  type?: string;
-  title: string;
-  message: string;
-  createdAt: string;
-  read: boolean;
-}
+type MissiveFilter = 'all' | 'unread' | 'payment' | 'system';
 
-const formatMissiveTime = (dateStr?: string): string => {
+const PAYMENT_KEYWORD_REGEX =
+  /\b(payment|payos|vnd|pact|order|txn|top-?up|tithe|gem|receipt|checkout|cancelled|failed|thanh toán|giao dịch|đơn hàng|nạp)\b/i;
+
+const isPaymentNotification = (note: NotificationModel): boolean => {
+  const type = (note.type || '').toLowerCase();
+  if (type === 'payment' || type === 'billing' || type === 'transaction' || type === 'error') {
+    return true;
+  }
+  return PAYMENT_KEYWORD_REGEX.test(`${note.title} ${note.message}`);
+};
+
+const formatMissiveTime = (dateStr: string | undefined, language: Language): string => {
   if (!dateStr) return '';
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return '';
-    return d.toLocaleString('vi-VN', {
+    return d.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -53,63 +60,31 @@ const formatMissiveTime = (dateStr?: string): string => {
 };
 
 export const MissivesScreen: React.FC = () => {
-  const { t } = useTranslation();
-  const [notifications, setNotifications] = useState<NotificationModel[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { t, language } = useTranslation();
+  const navigate = useNavigate();
+  const { notifications, notificationsLoaded, fetchNotifications, setNotifications } =
+    usePortalDataStore();
   const [isMarkingAll, setIsMarkingAll] = useState(false);
-  const { setUnreadCount } = useSyncStore();
-
-  const fetchNotifications = useCallback(
-    async (isInitial = false) => {
-      if (isInitial) setIsLoading(true);
-      try {
-        const response = await apiClient.get<NotificationModel[]>('/api/notification');
-        if (response.data && Array.isArray(response.data)) {
-          setNotifications(response.data);
-          const unread = response.data.filter((n) => !n.read).length;
-          setUnreadCount(unread);
-        }
-      } catch (error) {
-        console.warn('Failed to fetch notifications:', error);
-      } finally {
-        if (isInitial) setIsLoading(false);
-      }
-    },
-    [setUnreadCount]
-  );
+  const [activeFilter, setActiveFilter] = useState<MissiveFilter>('all');
 
   useEffect(() => {
     let isMounted = true;
 
-    fetchNotifications(true);
+    fetchNotifications();
     supportHubService.connect();
 
-    const unsubNotif = supportHubService.onEvent('ReceiveNotification', () => {
-      if (isMounted) fetchNotifications(false);
-    });
-
-    const unsubProfile = supportHubService.onEvent('ReceiveProfileUpdate', () => {
-      if (isMounted) fetchNotifications(false);
-    });
-
-    const unsubMsg = supportHubService.onMessage(() => {
-      if (isMounted) fetchNotifications(false);
-    });
-
-    const unsubRecon = supportHubService.onReconnected(() => {
-      if (isMounted) fetchNotifications(false);
-    });
-
-    const interval = setInterval(() => {
-      if (isMounted) fetchNotifications(false);
-    }, 6000);
-
-    const handleFocus = () => {
-      if (isMounted) fetchNotifications(false);
+    const refresh = () => {
+      if (isMounted) fetchNotifications();
     };
 
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
+    const unsubNotif = supportHubService.onEvent('ReceiveNotification', refresh);
+    const unsubProfile = supportHubService.onEvent('ReceiveProfileUpdate', refresh);
+    const unsubMsg = supportHubService.onMessage(refresh);
+    const unsubRecon = supportHubService.onReconnected(refresh);
+
+    const interval = setInterval(refresh, 6000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
 
     return () => {
       isMounted = false;
@@ -118,14 +93,32 @@ export const MissivesScreen: React.FC = () => {
       unsubMsg();
       unsubRecon();
       clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
     };
   }, [fetchNotifications]);
 
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications]
+  const counts = useMemo(() => {
+    let unread = 0;
+    let payment = 0;
+    let system = 0;
+    for (const note of notifications) {
+      if (!note.read) unread++;
+      if (isPaymentNotification(note)) payment++;
+      else system++;
+    }
+    return { all: notifications.length, unread, payment, system };
+  }, [notifications]);
+
+  const filteredNotifications = useMemo(
+    () =>
+      notifications.filter((note) => {
+        if (activeFilter === 'unread') return !note.read;
+        if (activeFilter === 'payment') return isPaymentNotification(note);
+        if (activeFilter === 'system') return !isPaymentNotification(note);
+        return true;
+      }),
+    [notifications, activeFilter]
   );
 
   const markAsRead = async (note: NotificationModel) => {
@@ -133,11 +126,9 @@ export const MissivesScreen: React.FC = () => {
     try {
       const response = await apiClient.post(`/api/notification/${note.id}/read`);
       if (response.status === 200) {
-        setNotifications((prev) => {
-          const next = prev.map((n) => (n.id === note.id ? { ...n, read: true } : n));
-          setUnreadCount(next.filter((n) => !n.read).length);
-          return next;
-        });
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === note.id ? { ...n, read: true } : n))
+        );
       }
     } catch (error) {
       console.error('Failed to mark as read', error);
@@ -145,13 +136,12 @@ export const MissivesScreen: React.FC = () => {
   };
 
   const markAllAsRead = async () => {
-    if (unreadCount === 0) return;
+    if (counts.unread === 0) return;
     setIsMarkingAll(true);
     try {
       const response = await apiClient.post('/api/notification/read-all');
       if (response.status === 200) {
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-        setUnreadCount(0);
       }
     } catch (error) {
       console.error('Failed to mark all as read', error);
@@ -174,9 +164,11 @@ export const MissivesScreen: React.FC = () => {
     }
   };
 
+  const showColdSkeleton = !notificationsLoaded && notifications.length === 0;
+
   return (
     <VStack gap={5} width="100%">
-      {/* Overview Stat Cards to fill horizontal space meaningfully */}
+      {/* Overview Stat Cards (Skeleton instead of fake 0 on cold load) */}
       <Grid columns={{ minWidth: 240, max: 3, repeat: 'fit' }} gap={4} width="100%">
         <Card variant="muted" padding={4}>
           <HStack gap={3} vAlign="center">
@@ -185,12 +177,18 @@ export const MissivesScreen: React.FC = () => {
               <Text type="supporting" size="base" color="secondary" weight="semibold">
                 {t('missives.unreadNotices')}
               </Text>
-              <HStack gap={2} vAlign="center">
-                <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
-                  {unreadCount}
-                </Text>
-                {unreadCount > 0 && <StatusDot variant="accent" label="Unread available" isPulsing />}
-              </HStack>
+              {showColdSkeleton ? (
+                <Skeleton width={56} height={32} />
+              ) : (
+                <HStack gap={2} vAlign="center">
+                  <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
+                    {counts.unread}
+                  </Text>
+                  {counts.unread > 0 && (
+                    <StatusDot variant="accent" label="Unread available" isPulsing />
+                  )}
+                </HStack>
+              )}
             </VStack>
           </HStack>
         </Card>
@@ -202,9 +200,13 @@ export const MissivesScreen: React.FC = () => {
               <Text type="supporting" size="base" color="secondary" weight="semibold">
                 {t('missives.totalArchives')}
               </Text>
-              <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
-                {notifications.length}
-              </Text>
+              {showColdSkeleton ? (
+                <Skeleton width={56} height={32} />
+              ) : (
+                <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
+                  {counts.all}
+                </Text>
+              )}
             </VStack>
           </HStack>
         </Card>
@@ -228,23 +230,45 @@ export const MissivesScreen: React.FC = () => {
       </Grid>
 
       <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
-        <HStack gap={2} vAlign="center">
-          <Heading level={2} weight="bold">{t('missives.recentMissives')}</Heading>
-          {unreadCount > 0 && <Badge label={unreadCount} variant="neutral" />}
-        </HStack>
+        <TabList
+          value={activeFilter}
+          onChange={(val) => setActiveFilter(val as MissiveFilter)}
+          hasDivider
+        >
+          <Tab
+            value="all"
+            label={t('missives.tabAll')}
+            endContent={<Badge label={counts.all} variant="neutral" />}
+          />
+          <Tab
+            value="unread"
+            label={t('missives.tabUnread')}
+            endContent={counts.unread > 0 ? <Badge label={counts.unread} variant="error" /> : undefined}
+          />
+          <Tab
+            value="payment"
+            label={t('missives.tabTransaction')}
+            endContent={counts.payment > 0 ? <Badge label={counts.payment} variant="neutral" /> : undefined}
+          />
+          <Tab
+            value="system"
+            label={t('missives.tabSystem')}
+            endContent={counts.system > 0 ? <Badge label={counts.system} variant="neutral" /> : undefined}
+          />
+        </TabList>
 
         <Button
           variant="secondary"
-          size="md"
+          size="sm"
           icon={<Icon icon={CheckCheck} size="sm" />}
           label={t('missives.markAllRead')}
           isLoading={isMarkingAll}
-          isDisabled={unreadCount === 0 || isMarkingAll}
+          isDisabled={counts.unread === 0 || isMarkingAll}
           onClick={markAllAsRead}
         />
       </HStack>
 
-      {isLoading ? (
+      {showColdSkeleton ? (
         <Card padding={5}>
           <VStack gap={3}>
             <Skeleton height={72} />
@@ -252,47 +276,99 @@ export const MissivesScreen: React.FC = () => {
             <Skeleton height={72} />
           </VStack>
         </Card>
-      ) : notifications.length === 0 ? (
+      ) : filteredNotifications.length === 0 ? (
         <Card padding={6}>
           <EmptyState
             icon={<Icon icon={BellOff} size="lg" color="accent" />}
-            title={t('missives.noMissivesTitle')}
-            description={t('missives.noMissivesDesc')}
+            title={
+              notifications.length === 0
+                ? t('missives.noMissivesTitle')
+                : t('missives.emptyTitle')
+            }
+            description={
+              notifications.length === 0
+                ? t('missives.noMissivesDesc')
+                : t('missives.emptyDesc')
+            }
           />
         </Card>
       ) : (
         <Card padding={0}>
           <List density="spacious" hasDividers edge="bleed">
-            {notifications.map((note) => (
-              <ListItem
-                key={note.id}
-                align="center"
-                startContent={renderTypeIcon(note.type)}
-                label={
-                  <Text
-                    weight={note.read ? 'medium' : 'bold'}
-                    size="xl"
-                    color={note.read ? 'secondary' : 'primary'}
-                  >
-                    {note.title}
-                  </Text>
-                }
-                description={
-                  <Text type="body" size="lg" color={note.read ? 'disabled' : 'secondary'} display="block">
-                    {note.message}
-                  </Text>
-                }
-                endContent={
-                  <HStack gap={3} vAlign="center">
-                    <Text type="supporting" size="base" color="secondary" hasTabularNumbers>
-                      {formatMissiveTime(note.createdAt)}
-                    </Text>
-                    {!note.read && <StatusDot variant="accent" label="Unread notification" isPulsing />}
-                  </HStack>
-                }
-                onClick={() => markAsRead(note)}
-              />
-            ))}
+            {filteredNotifications.map((note) => {
+              const isPayment = isPaymentNotification(note);
+              return (
+                <ListItem
+                  key={note.id}
+                  align="center"
+                  startContent={renderTypeIcon(note.type)}
+                  label={
+                    <HStack gap={2} vAlign="center" wrap="wrap">
+                      <Text
+                        weight={note.read ? 'medium' : 'bold'}
+                        size="lg"
+                        color={note.read ? 'secondary' : 'primary'}
+                      >
+                        {note.title}
+                      </Text>
+                      <Token
+                        size="sm"
+                        color={isPayment ? 'yellow' : 'gray'}
+                        label={
+                          isPayment
+                            ? t('missives.categoryPayment')
+                            : t('missives.categoryInGame')
+                        }
+                      />
+                    </HStack>
+                  }
+                  description={
+                    <VStack gap={1.5}>
+                      <Text
+                        type="body"
+                        size="base"
+                        color={note.read ? 'disabled' : 'secondary'}
+                        display="block"
+                      >
+                        {note.message}
+                      </Text>
+                      {isPayment ? (
+                        <HStack gap={2}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={<Icon icon={Receipt} size="xsm" />}
+                            label={t('missives.viewOrderHistory')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(note);
+                              navigate('/profile/history');
+                            }}
+                          />
+                        </HStack>
+                      ) : (
+                        /claim/i.test(note.message) && (
+                          <Text type="supporting" size="xsm" color="disabled" display="block">
+                            {t('missives.inGameNoteHint')}
+                          </Text>
+                        )
+                      )}
+                    </VStack>
+                  }
+                  endContent={
+                    <HStack gap={3} vAlign="center">
+                      <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
+                        {formatMissiveTime(note.createdAt, language)}
+                      </Text>
+                      {!note.read && (
+                        <StatusDot variant="accent" label="Unread notification" isPulsing />
+                      )}
+                    </HStack>
+                  }
+                  onClick={() => markAsRead(note)}
+                />
+              );
+            })}
           </List>
         </Card>
       )}

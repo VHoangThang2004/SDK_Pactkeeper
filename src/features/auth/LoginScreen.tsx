@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Gem,
   User,
   KeyRound,
   CheckCircle2,
@@ -57,7 +56,7 @@ export const LoginScreen: React.FC = () => {
       setError(
         err instanceof Error
           ? err.message
-          : 'Login failed. Please verify credentials against Backend.'
+          : t('auth.loginErrorFallback')
       );
     } finally {
       setIsLoading(false);
@@ -71,7 +70,7 @@ export const LoginScreen: React.FC = () => {
       const user = await loginWithGoogleUseCase.execute(idToken);
       login(user.token, user.username, user.playerId, user.role);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Google login error');
+      setError(err instanceof Error ? err.message : t('auth.googleErrorFallback'));
     } finally {
       setIsLoading(false);
     }
@@ -100,9 +99,7 @@ export const LoginScreen: React.FC = () => {
         </HStack>
 
         <VStack gap={2} hAlign="center">
-          <Card variant="default" padding={3} elevation="med">
-            <Icon icon={Gem} size="lg" color="accent" />
-          </Card>
+          <img src="/logo.png" alt="Pactkeeper Logo" className="brandLogoLogin" />
           <Heading level={1} justify="center">
             PACTKEEPER
           </Heading>
@@ -126,7 +123,7 @@ export const LoginScreen: React.FC = () => {
                         onSuccess={(credentialResponse) =>
                           loginWithGoogleMutation(credentialResponse.credential)
                         }
-                        onError={() => setError(isVietnamese ? 'Đăng nhập Google thất bại hoặc đã bị hủy' : 'Google login was cancelled or failed')}
+                        onError={() => setError(t('auth.googleCancelledError'))}
                         useOneTap
                         theme={mode === 'dark' ? 'filled_black' : 'outline'}
                         text="signin_with"
@@ -138,13 +135,13 @@ export const LoginScreen: React.FC = () => {
                   <HStack gap={3} vAlign="center" width="100%">
                     <Divider />
                     <Text type="supporting" size="xsm" color="disabled">
-                      {isVietnamese ? 'HOẶC' : 'OR'}
+                      {t('auth.orDivider')}
                     </Text>
                     <Divider />
                   </HStack>
 
                   <Button
-                    label={isVietnamese ? 'Đăng nhập bằng tài khoản Game' : 'Sign in with Game Account'}
+                    label={t('auth.useGameAccount')}
                     variant="secondary"
                     width="100%"
                     icon={<Icon icon={LogIn} size="sm" />}
@@ -158,8 +155,8 @@ export const LoginScreen: React.FC = () => {
                 <form onSubmit={handleNormalLogin}>
                   <VStack gap={4} width="100%">
                     <TextInput
-                      label={isVietnamese ? 'Tài khoản Game / Tên đăng nhập' : 'Player Account / Username'}
-                      placeholder="e.g. player1"
+                      label={t('auth.usernameLabel')}
+                      placeholder={t('auth.usernamePlaceholder')}
                       value={username}
                       onChange={setUsername}
                       startIcon={User}
@@ -169,9 +166,9 @@ export const LoginScreen: React.FC = () => {
                     />
 
                     <TextInput
-                      label={isVietnamese ? 'Mật khẩu' : 'Password'}
+                      label={t('auth.passwordLabel')}
                       type="password"
-                      placeholder={isVietnamese ? 'Nhập mật khẩu' : 'Enter password'}
+                      placeholder={t('auth.passwordPlaceholder')}
                       value={password}
                       onChange={setPassword}
                       startIcon={KeyRound}
@@ -182,7 +179,7 @@ export const LoginScreen: React.FC = () => {
 
                     <Button
                       type="submit"
-                      label={isVietnamese ? 'Đăng nhập vào tài khoản Game' : 'Sign In to Player Account'}
+                      label={t('auth.submitGameAccount')}
                       variant="primary"
                       size="lg"
                       width="100%"
@@ -190,7 +187,7 @@ export const LoginScreen: React.FC = () => {
                     />
 
                     <Button
-                      label={isVietnamese ? 'Quay lại Đăng nhập Google' : 'Use Google Sign-In Instead'}
+                      label={t('auth.useGoogleInstead')}
                       variant="ghost"
                       width="100%"
                       onClick={() => {
@@ -203,7 +200,7 @@ export const LoginScreen: React.FC = () => {
               )}
 
               {error && (
-                <Banner status="error" title={isVietnamese ? 'Đăng Nhập Thất Bại' : 'Sign In Failed'} description={error} role="alert" />
+                <Banner status="error" title={t('auth.signInFailedTitle')} description={error} role="alert" />
               )}
 
               <Divider />
@@ -227,7 +224,7 @@ export const LoginScreen: React.FC = () => {
             <Divider />
 
             <Button
-              label={isVietnamese ? 'Xem bảng giá nạp với tư cách Khách' : 'Browse Top-Up Price List as Guest'}
+              label={t('auth.browseAsGuest')}
               variant="ghost"
               width="100%"
               icon={<Icon icon={ArrowLeft} size="sm" />}
