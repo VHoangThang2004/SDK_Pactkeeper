@@ -11,15 +11,20 @@ import {
   Inbox,
   Radio,
   Receipt,
+  Eye,
+  MessageSquare,
 } from 'lucide-react';
 import { Badge } from '@astryxdesign/core/Badge';
+import { Banner } from '@astryxdesign/core/Banner';
 import { Button } from '@astryxdesign/core/Button';
 import { Card } from '@astryxdesign/core/Card';
+import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Icon } from '@astryxdesign/core/Icon';
-import { HStack, VStack } from '@astryxdesign/core/Layout';
+import { HStack, Layout, LayoutContent, LayoutFooter, VStack } from '@astryxdesign/core/Layout';
 import { List, ListItem } from '@astryxdesign/core/List';
+import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { Tab, TabList } from '@astryxdesign/core/TabList';
@@ -43,12 +48,13 @@ const isPaymentNotification = (note: NotificationModel): boolean => {
   return PAYMENT_KEYWORD_REGEX.test(`${note.title} ${note.message}`);
 };
 
-const formatMissiveTime = (dateStr: string | undefined, language: Language): string => {
+const formatMissiveTime = (dateStr: string | undefined, language: Language, full = false): string => {
   if (!dateStr) return '';
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return '';
     return d.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US', {
+      year: full ? 'numeric' : undefined,
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -66,6 +72,7 @@ export const MissivesScreen: React.FC = () => {
     usePortalDataStore();
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [activeFilter, setActiveFilter] = useState<MissiveFilter>('all');
+  const [selectedNote, setSelectedNote] = useState<NotificationModel | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -135,6 +142,13 @@ export const MissivesScreen: React.FC = () => {
     }
   };
 
+  const handleOpenDetail = (note: NotificationModel) => {
+    setSelectedNote({ ...note, read: true });
+    if (!note.read) {
+      markAsRead(note);
+    }
+  };
+
   const markAllAsRead = async () => {
     if (counts.unread === 0) return;
     setIsMarkingAll(true);
@@ -154,81 +168,82 @@ export const MissivesScreen: React.FC = () => {
     const normalized = (type || 'info').toLowerCase();
     switch (normalized) {
       case 'success':
-        return <Icon icon={CheckCircle2} size="lg" color="success" />;
+        return <Icon icon={CheckCircle2} size="md" color="success" />;
       case 'error':
-        return <Icon icon={XCircle} size="lg" color="error" />;
+        return <Icon icon={XCircle} size="md" color="error" />;
       case 'promo':
-        return <Icon icon={Gift} size="lg" color="warning" />;
+        return <Icon icon={Gift} size="md" color="warning" />;
       default:
-        return <Icon icon={Info} size="lg" color="accent" />;
+        return <Icon icon={Info} size="md" color="accent" />;
     }
   };
 
   const showColdSkeleton = !notificationsLoaded && notifications.length === 0;
 
   return (
-    <VStack gap={5} width="100%">
-      {/* Overview Stat Cards (Skeleton instead of fake 0 on cold load) */}
-      <Grid columns={{ minWidth: 240, max: 3, repeat: 'fit' }} gap={4} width="100%">
-        <Card variant="muted" padding={4}>
-          <HStack gap={3} vAlign="center">
-            <Icon icon={Mail} size="lg" color="accent" />
-            <VStack gap={0.5}>
-              <Text type="supporting" size="base" color="secondary" weight="semibold">
+    <VStack gap={4} width="100%">
+      {/* Compact Overview Strip */}
+      <Grid columns={{ minWidth: 220, max: 3, repeat: 'fit' }} gap={3} width="100%">
+        <Card variant="muted" padding={3} className="compactStatCard">
+          <HStack hAlign="between" vAlign="center" width="100%">
+            <HStack gap={2} vAlign="center">
+              <Icon icon={Mail} size="md" color="accent" />
+              <Text type="supporting" size="sm" color="secondary" weight="semibold">
                 {t('missives.unreadNotices')}
               </Text>
-              {showColdSkeleton ? (
-                <Skeleton width={56} height={32} />
-              ) : (
-                <HStack gap={2} vAlign="center">
-                  <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
-                    {counts.unread}
-                  </Text>
-                  {counts.unread > 0 && (
-                    <StatusDot variant="accent" label="Unread available" isPulsing />
-                  )}
-                </HStack>
-              )}
-            </VStack>
+            </HStack>
+            {showColdSkeleton ? (
+              <Skeleton width={40} height={26} />
+            ) : (
+              <HStack gap={1.5} vAlign="center">
+                <Text type="large" size="2xl" weight="bold" hasTabularNumbers>
+                  {counts.unread}
+                </Text>
+                {counts.unread > 0 && (
+                  <StatusDot variant="accent" label="Unread available" isPulsing />
+                )}
+              </HStack>
+            )}
           </HStack>
         </Card>
 
-        <Card variant="muted" padding={4}>
-          <HStack gap={3} vAlign="center">
-            <Icon icon={Inbox} size="lg" color="secondary" />
-            <VStack gap={0.5}>
-              <Text type="supporting" size="base" color="secondary" weight="semibold">
+        <Card variant="muted" padding={3} className="compactStatCard">
+          <HStack hAlign="between" vAlign="center" width="100%">
+            <HStack gap={2} vAlign="center">
+              <Icon icon={Inbox} size="md" color="secondary" />
+              <Text type="supporting" size="sm" color="secondary" weight="semibold">
                 {t('missives.totalArchives')}
               </Text>
-              {showColdSkeleton ? (
-                <Skeleton width={56} height={32} />
-              ) : (
-                <Text type="large" size="3xl" weight="bold" hasTabularNumbers>
-                  {counts.all}
-                </Text>
-              )}
-            </VStack>
+            </HStack>
+            {showColdSkeleton ? (
+              <Skeleton width={40} height={26} />
+            ) : (
+              <Text type="large" size="2xl" weight="bold" hasTabularNumbers>
+                {counts.all}
+              </Text>
+            )}
           </HStack>
         </Card>
 
-        <Card variant="muted" padding={4}>
-          <HStack gap={3} vAlign="center">
-            <Icon icon={Radio} size="lg" color="success" />
-            <VStack gap={0.5}>
-              <Text type="supporting" size="base" color="secondary" weight="semibold">
+        <Card variant="muted" padding={3} className="compactStatCard">
+          <HStack hAlign="between" vAlign="center" width="100%">
+            <HStack gap={2} vAlign="center">
+              <Icon icon={Radio} size="md" color="success" />
+              <Text type="supporting" size="sm" color="secondary" weight="semibold">
                 {t('missives.systemChannel')}
               </Text>
-              <HStack gap={2} vAlign="center">
-                <StatusDot variant="success" label="Active" isPulsing />
-                <Text type="body" size="lg" weight="medium">
-                  {t('missives.liveDispatchActive')}
-                </Text>
-              </HStack>
-            </VStack>
+            </HStack>
+            <HStack gap={1.5} vAlign="center">
+              <StatusDot variant="success" label="Active" isPulsing />
+              <Text type="supporting" size="sm" weight="semibold">
+                {t('missives.liveDispatchActive')}
+              </Text>
+            </HStack>
           </HStack>
         </Card>
       </Grid>
 
+      {/* Filter Tabs & Mark All Read */}
       <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
         <TabList
           value={activeFilter}
@@ -243,17 +258,23 @@ export const MissivesScreen: React.FC = () => {
           <Tab
             value="unread"
             label={t('missives.tabUnread')}
-            endContent={counts.unread > 0 ? <Badge label={counts.unread} variant="error" /> : undefined}
+            endContent={
+              counts.unread > 0 ? <Badge label={counts.unread} variant="error" /> : undefined
+            }
           />
           <Tab
             value="payment"
             label={t('missives.tabTransaction')}
-            endContent={counts.payment > 0 ? <Badge label={counts.payment} variant="neutral" /> : undefined}
+            endContent={
+              counts.payment > 0 ? <Badge label={counts.payment} variant="neutral" /> : undefined
+            }
           />
           <Tab
             value="system"
             label={t('missives.tabSystem')}
-            endContent={counts.system > 0 ? <Badge label={counts.system} variant="neutral" /> : undefined}
+            endContent={
+              counts.system > 0 ? <Badge label={counts.system} variant="neutral" /> : undefined
+            }
           />
         </TabList>
 
@@ -268,12 +289,13 @@ export const MissivesScreen: React.FC = () => {
         />
       </HStack>
 
+      {/* Notification List */}
       {showColdSkeleton ? (
-        <Card padding={5}>
+        <Card padding={4}>
           <VStack gap={3}>
-            <Skeleton height={72} />
-            <Skeleton height={72} />
-            <Skeleton height={72} />
+            <Skeleton height={64} />
+            <Skeleton height={64} />
+            <Skeleton height={64} />
           </VStack>
         </Card>
       ) : filteredNotifications.length === 0 ? (
@@ -293,85 +315,192 @@ export const MissivesScreen: React.FC = () => {
           />
         </Card>
       ) : (
-        <Card padding={0}>
-          <List density="spacious" hasDividers edge="bleed">
-            {filteredNotifications.map((note) => {
-              const isPayment = isPaymentNotification(note);
-              return (
-                <ListItem
-                  key={note.id}
-                  align="center"
-                  startContent={renderTypeIcon(note.type)}
-                  label={
-                    <HStack gap={2} vAlign="center" wrap="wrap">
-                      <Text
-                        weight={note.read ? 'medium' : 'bold'}
-                        size="lg"
-                        color={note.read ? 'secondary' : 'primary'}
-                      >
-                        {note.title}
-                      </Text>
-                      <Token
-                        size="sm"
-                        color={isPayment ? 'yellow' : 'gray'}
-                        label={
-                          isPayment
-                            ? t('missives.categoryPayment')
-                            : t('missives.categoryInGame')
-                        }
-                      />
-                    </HStack>
-                  }
-                  description={
-                    <VStack gap={1.5}>
-                      <Text
-                        type="body"
-                        size="base"
-                        color={note.read ? 'disabled' : 'secondary'}
-                        display="block"
-                      >
+        <VStack key={activeFilter} width="100%" className="tabPanelMotion">
+          <Card padding={0}>
+            <VStack width="100%" className="scrollablePanelBody">
+              <List density="balanced" hasDividers edge="bleed">
+              {filteredNotifications.map((note) => {
+                const isPayment = isPaymentNotification(note);
+                return (
+                  <ListItem
+                    key={note.id}
+                    align="center"
+                    className={
+                      note.read ? 'clickableRow' : 'clickableRow missiveRowUnread'
+                    }
+                    startContent={renderTypeIcon(note.type)}
+                    label={
+                      <HStack gap={2} vAlign="center" wrap="wrap">
+                        <Text
+                          weight={note.read ? 'semibold' : 'bold'}
+                          size="base"
+                          color="primary"
+                        >
+                          {note.title}
+                        </Text>
+                        <Token
+                          size="sm"
+                          color={isPayment ? 'yellow' : 'gray'}
+                          label={
+                            isPayment
+                              ? t('missives.categoryPayment')
+                              : t('missives.categoryInGame')
+                          }
+                        />
+                        {!note.read && (
+                          <StatusDot variant="accent" label="Unread notification" isPulsing />
+                        )}
+                      </HStack>
+                    }
+                    description={
+                      <Text type="body" size="sm" color="secondary" display="block">
                         {note.message}
                       </Text>
-                      {isPayment ? (
-                        <HStack gap={2}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={<Icon icon={Receipt} size="xsm" />}
-                            label={t('missives.viewOrderHistory')}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              markAsRead(note);
-                              navigate('/profile/history');
-                            }}
-                          />
-                        </HStack>
-                      ) : (
-                        /claim/i.test(note.message) && (
-                          <Text type="supporting" size="xsm" color="disabled" display="block">
-                            {t('missives.inGameNoteHint')}
-                          </Text>
-                        )
-                      )}
-                    </VStack>
-                  }
-                  endContent={
-                    <HStack gap={3} vAlign="center">
-                      <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
-                        {formatMissiveTime(note.createdAt, language)}
-                      </Text>
-                      {!note.read && (
-                        <StatusDot variant="accent" label="Unread notification" isPulsing />
-                      )}
-                    </HStack>
-                  }
-                  onClick={() => markAsRead(note)}
-                />
-              );
-            })}
-          </List>
-        </Card>
+                    }
+                    endContent={
+                      <HStack gap={3} vAlign="center">
+                        <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
+                          {formatMissiveTime(note.createdAt, language)}
+                        </Text>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={<Icon icon={Eye} size="xsm" />}
+                          label={t('missives.viewDetailAction')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDetail(note);
+                          }}
+                        />
+                      </HStack>
+                    }
+                    onClick={() => handleOpenDetail(note)}
+                  />
+                );
+              })}
+              </List>
+            </VStack>
+            {filteredNotifications.length > 5 && (
+              <HStack hAlign="between" vAlign="center" className="scrollFooterBar">
+                <Text type="supporting" size="sm" color="secondary" hasTabularNumbers>
+                  {t('missives.showingCount', { count: filteredNotifications.length })}
+                </Text>
+                <Text type="supporting" size="sm" color="secondary">
+                  {t('missives.scrollHint')}
+                </Text>
+              </HStack>
+            )}
+          </Card>
+        </VStack>
       )}
+
+      {/* Detailed Notification Modal */}
+      <Dialog
+        isOpen={Boolean(selectedNote)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedNote(null);
+        }}
+        width={520}
+        purpose="info"
+      >
+        {selectedNote && (() => {
+          const isPayment = isPaymentNotification(selectedNote);
+          return (
+            <Layout
+              height="auto"
+              defaultHasDividers={false}
+              header={
+                <DialogHeader
+                  title={selectedNote.title}
+                  subtitle={t('missives.detailTitle')}
+                  startContent={renderTypeIcon(selectedNote.type)}
+                  onOpenChange={(open) => {
+                    if (!open) setSelectedNote(null);
+                  }}
+                  hasDivider
+                />
+              }
+              content={
+                <LayoutContent isScrollable={false}>
+                  <VStack gap={4}>
+                    <MetadataList>
+                      <MetadataListItem label={t('missives.detailCategory')}>
+                        <Token
+                          size="sm"
+                          color={isPayment ? 'yellow' : 'gray'}
+                          label={
+                            isPayment
+                              ? t('missives.categoryPayment')
+                              : t('missives.categoryInGame')
+                          }
+                        />
+                      </MetadataListItem>
+                      <MetadataListItem label={t('missives.detailStatus')}>
+                        {t('missives.readStatus')}
+                      </MetadataListItem>
+                      <MetadataListItem label={t('missives.detailTime')}>
+                        {formatMissiveTime(selectedNote.createdAt, language, true)}
+                      </MetadataListItem>
+                    </MetadataList>
+
+                    <Card variant="muted" padding={4} width="100%">
+                      <VStack gap={1.5}>
+                        <Text type="supporting" size="sm" weight="semibold" color="secondary">
+                          {t('missives.detailMessage')}
+                        </Text>
+                        <Text type="body" size="base" color="primary" display="block">
+                          {selectedNote.message}
+                        </Text>
+                      </VStack>
+                    </Card>
+
+                    {!isPayment && /claim/i.test(selectedNote.message) && (
+                      <Banner
+                        status="info"
+                        title={t('missives.categoryInGame')}
+                        description={t('missives.inGameNoteHint')}
+                      />
+                    )}
+                  </VStack>
+                </LayoutContent>
+              }
+              footer={
+                <LayoutFooter hasDivider>
+                  <HStack gap={2} hAlign="end" wrap="wrap" width="100%">
+                    {isPayment && (
+                      <>
+                        <Button
+                          variant="secondary"
+                          icon={<Icon icon={MessageSquare} size="xsm" />}
+                          label={t('missives.contactSupportAction')}
+                          onClick={() => {
+                            setSelectedNote(null);
+                            navigate('/profile/support');
+                          }}
+                        />
+                        <Button
+                          variant="secondary"
+                          icon={<Icon icon={Receipt} size="xsm" />}
+                          label={t('missives.viewOrderHistory')}
+                          onClick={() => {
+                            setSelectedNote(null);
+                            navigate('/profile/history');
+                          }}
+                        />
+                      </>
+                    )}
+                    <Button
+                      variant="primary"
+                      label={t('common.close')}
+                      onClick={() => setSelectedNote(null)}
+                    />
+                  </HStack>
+                </LayoutFooter>
+              }
+            />
+          );
+        })()}
+      </Dialog>
     </VStack>
   );
 };

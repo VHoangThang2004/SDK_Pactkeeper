@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User,
@@ -33,11 +33,43 @@ export const LoginScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usePasswordLogin, setUsePasswordLogin] = useState(false);
+  const [activeSceneIndex, setActiveSceneIndex] = useState(0);
 
   const { login, setPendingRedirect } = useAuthStore();
   const { mode, toggleMode } = useThemeMode();
   const { t, isVietnamese, toggleLanguage } = useTranslation();
   const navigate = useNavigate();
+
+  const gameScenes = useMemo(
+    () => [
+      {
+        id: 'awaken',
+        num: '01',
+        src: '/game-assets/hero-awaken.png',
+        title: t('topup.scene1Label'),
+      },
+      {
+        id: 'briefing',
+        num: '02',
+        src: '/game-assets/hero-briefing.png',
+        title: t('topup.scene2Label'),
+      },
+      {
+        id: 'eye',
+        num: '03',
+        src: '/game-assets/hero-eye.png',
+        title: t('topup.scene3Label'),
+      },
+    ],
+    [t]
+  );
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveSceneIndex((prev) => (prev + 1) % 3);
+    }, 6000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const handleBrowseAsGuest = () => {
     setPendingRedirect(null);
@@ -77,41 +109,62 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <Center padding={6} minHeight="100dvh" width="100%">
-      <VStack gap={5} width="100%" maxWidth={460} hAlign="center">
-        <HStack hAlign="end" vAlign="center" gap={2} width="100%">
-          <IconButton
-            variant="ghost"
-            size="sm"
-            label={isVietnamese ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
-            tooltip={isVietnamese ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
-            icon={<Icon icon={Languages} size="sm" />}
-            onClick={toggleLanguage}
+    <Center padding={4} minHeight="100dvh" width="100%" className="loginStage">
+      <VStack className="loginBgLayer">
+        {gameScenes.map((scene, idx) => (
+          <img
+            key={scene.id}
+            src={scene.src}
+            alt=""
+            aria-hidden="true"
+            className={
+              idx === activeSceneIndex
+                ? 'loginBgImage loginBgImageActive'
+                : 'loginBgImage'
+            }
           />
-          <IconButton
-            variant="ghost"
-            size="sm"
-            label={mode === 'dark' ? t('common.switchToLight') : t('common.switchToDark')}
-            tooltip={mode === 'dark' ? t('common.themeLight') : t('common.themeDark')}
-            icon={<Icon icon={mode === 'dark' ? Sun : Moon} size="sm" />}
-            onClick={toggleMode}
-          />
-        </HStack>
+        ))}
+      </VStack>
+      <VStack className="loginBgScrim" />
 
-        <VStack gap={2} hAlign="center">
-          <img src="/logo.png" alt="Pactkeeper Logo" className="brandLogoLogin" />
-          <Heading level={1} justify="center">
-            PACTKEEPER
-          </Heading>
-          <Text type="supporting" size="sm" color="secondary" justify="center" display="block">
-            {t('common.tagline')}
-          </Text>
-        </VStack>
+      <VStack gap={3} width="100%" maxWidth={520} hAlign="center" className="loginForeground pageMotionWrap">
+        <Card variant="default" elevation="med" padding={5} width="100%" className="loginCard">
+          <VStack gap={4} width="100%">
+            {/* Top Utility Controls inside card for guaranteed contrast */}
+            <HStack hAlign="end" vAlign="center" gap={2} width="100%">
+              <IconButton
+                variant="secondary"
+                size="md"
+                label={isVietnamese ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+                tooltip={isVietnamese ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+                icon={<Icon icon={Languages} size="sm" />}
+                onClick={toggleLanguage}
+              />
+              <IconButton
+                variant="secondary"
+                size="md"
+                label={mode === 'dark' ? t('common.switchToLight') : t('common.switchToDark')}
+                tooltip={mode === 'dark' ? t('common.themeLight') : t('common.themeDark')}
+                icon={<Icon icon={mode === 'dark' ? Sun : Moon} size="sm" />}
+                onClick={toggleMode}
+              />
+            </HStack>
 
-        <Card variant="default" elevation="med" padding={6} width="100%">
-          <VStack gap={5} width="100%">
+            {/* Brand Header inside card for crisp Light/Dark contrast */}
+            <VStack gap={2} hAlign="center">
+              <img src="/logo.png" alt="Pactkeeper Logo" className="brandLogoLogin" />
+              <Heading level={1} justify="center" weight="bold">
+                PACTKEEPER
+              </Heading>
+              <Text type="body" size="base" weight="medium" color="secondary" justify="center" display="block">
+                {t('common.tagline')}
+              </Text>
+            </VStack>
+
+            <Divider />
+
             <VStack gap={4} width="100%">
-              <Text type="supporting" size="sm" color="secondary" justify="center" display="block">
+              <Text type="body" size="lg" color="secondary" justify="center" display="block">
                 {t('auth.signInSubtitle')}
               </Text>
 
@@ -125,6 +178,7 @@ export const LoginScreen: React.FC = () => {
                         }
                         onError={() => setError(t('auth.googleCancelledError'))}
                         useOneTap
+                        size="large"
                         theme={mode === 'dark' ? 'filled_black' : 'outline'}
                         text="signin_with"
                         shape="pill"
@@ -134,7 +188,7 @@ export const LoginScreen: React.FC = () => {
 
                   <HStack gap={3} vAlign="center" width="100%">
                     <Divider />
-                    <Text type="supporting" size="xsm" color="disabled">
+                    <Text type="supporting" size="sm" weight="semibold" color="secondary">
                       {t('auth.orDivider')}
                     </Text>
                     <Divider />
@@ -143,6 +197,7 @@ export const LoginScreen: React.FC = () => {
                   <Button
                     label={t('auth.useGameAccount')}
                     variant="secondary"
+                    size="lg"
                     width="100%"
                     icon={<Icon icon={LogIn} size="sm" />}
                     onClick={() => {
@@ -189,6 +244,7 @@ export const LoginScreen: React.FC = () => {
                     <Button
                       label={t('auth.useGoogleInstead')}
                       variant="ghost"
+                      size="md"
                       width="100%"
                       onClick={() => {
                         setUsePasswordLogin(false);
@@ -205,16 +261,16 @@ export const LoginScreen: React.FC = () => {
 
               <Divider />
 
-              <VStack gap={1.5} width="100%">
+              <VStack gap={2} width="100%">
                 <HStack gap={2} vAlign="center">
-                  <Icon icon={CheckCircle2} size="xsm" color="accent" />
-                  <Text type="supporting" size="xsm" color="secondary">
+                  <Icon icon={CheckCircle2} size="sm" color="accent" />
+                  <Text type="body" size="base" color="secondary">
                     {t('trust.instantDelivery')}
                   </Text>
                 </HStack>
                 <HStack gap={2} vAlign="center">
-                  <Icon icon={CheckCircle2} size="xsm" color="accent" />
-                  <Text type="supporting" size="xsm" color="secondary">
+                  <Icon icon={CheckCircle2} size="sm" color="accent" />
+                  <Text type="body" size="base" color="secondary">
                     {t('trust.securePayment')}
                   </Text>
                 </HStack>
@@ -226,12 +282,30 @@ export const LoginScreen: React.FC = () => {
             <Button
               label={t('auth.browseAsGuest')}
               variant="ghost"
+              size="lg"
               width="100%"
               icon={<Icon icon={ArrowLeft} size="sm" />}
               onClick={handleBrowseAsGuest}
             />
           </VStack>
         </Card>
+
+        {/* Interactive Scene Switcher Pills */}
+        <HStack gap={2} wrap="wrap" hAlign="center">
+          {gameScenes.map((scene, idx) => {
+            const isActive = idx === activeSceneIndex;
+            return (
+              <Button
+                key={scene.id}
+                variant={isActive ? 'secondary' : 'ghost'}
+                size="sm"
+                label={`${scene.num} · ${scene.title}`}
+                className="scenePillBtn"
+                onClick={() => setActiveSceneIndex(idx)}
+              />
+            );
+          })}
+        </HStack>
       </VStack>
     </Center>
   );

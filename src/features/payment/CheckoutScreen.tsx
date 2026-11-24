@@ -10,6 +10,8 @@ import {
   Swords,
   Shield,
   Sparkles,
+  CheckCircle2,
+  ChevronRight,
 } from 'lucide-react';
 import { Avatar } from '@astryxdesign/core/Avatar';
 import { Banner } from '@astryxdesign/core/Banner';
@@ -125,6 +127,28 @@ export const CheckoutScreen: React.FC = () => {
             </Text>
           </HStack>
         </HStack>
+
+        {/* 3-Step Checkout Progress Bar */}
+        <Card variant="muted" padding={3} className="checkoutStepperCard">
+          <HStack hAlign="center" vAlign="center" gap={3} wrap="wrap" width="100%">
+            <HStack gap={1.5} vAlign="center">
+              <Icon icon={CheckCircle2} size="sm" color="success" />
+              <Text size="sm" weight="medium" color="secondary">
+                {t('checkout.stepperSelectPack')}
+              </Text>
+            </HStack>
+            <Icon icon={ChevronRight} size="xsm" color="disabled" />
+            <Token
+              color="yellow"
+              size="md"
+              label={t('checkout.stepperConfirmPay')}
+            />
+            <Icon icon={ChevronRight} size="xsm" color="disabled" />
+            <Text size="sm" color="disabled">
+              {t('checkout.stepperInstantDelivery')}
+            </Text>
+          </HStack>
+        </Card>
 
         <Card padding={4} elevation="low">
           <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
@@ -318,7 +342,7 @@ export const CheckoutScreen: React.FC = () => {
                 </Text>
               </HStack>
 
-              <Text type="supporting" size="2xs" color="secondary">
+              <Text type="supporting" size="sm" color="secondary">
                 {t('checkout.termsNotice')}
               </Text>
             </VStack>
