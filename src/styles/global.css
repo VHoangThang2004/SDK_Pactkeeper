@@ -793,7 +793,7 @@
   }
 
   /* ==========================================================================
-     5. Support Chat & Counsel
+     5. Support Chat & Counsel (Clean Pinned Composer, Zero Clipping)
      ========================================================================== */
   .supportGrid {
     grid-template-columns: 1fr;
@@ -802,38 +802,145 @@
 
   @media (min-width: 960px) {
     .supportGrid {
-      grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
     }
   }
 
   .supportSidebar {
     position: sticky;
-    top: var(--spacing-4);
+    top: calc(var(--spacing-10) + var(--spacing-4));
   }
 
   .chatShell {
     display: flex;
     flex-direction: column;
-    height: 68dvh;
-    min-height: 30rem;
-    max-height: 52rem;
+    height: min(74dvh, 46rem);
+    min-height: 34rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid color-mix(in srgb, var(--color-border-emphasized) 78%, var(--color-border));
     overflow: hidden;
   }
 
-  [data-theme='dark'] .chatShell textarea::placeholder,
-  [data-theme='dark'] .chatShell input::placeholder {
-    color: var(--color-text-secondary);
-    opacity: 0.9;
-  }
-
-  [data-theme='dark'] .chatShell {
-    border: 1px solid var(--color-border-emphasized);
-  }
-
-  .chatBody {
+  .chatMessagesScroll {
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    padding: var(--spacing-4) var(--spacing-5);
+    background-color: color-mix(in srgb, var(--color-background-body) 45%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+
+  .chatBubbleSelf {
+    max-width: min(78%, 34rem);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg);
+    background-color: var(--color-accent);
+    color: var(--color-on-accent);
+    box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--color-accent) 45%, transparent);
+    word-break: break-word;
+  }
+
+  .chatBubbleStaff {
+    max-width: min(82%, 36rem);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
+    background-color: var(--color-background-card);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-emphasized);
+    word-break: break-word;
+  }
+
+  .chatComposerBox {
+    flex-shrink: 0;
+    padding: var(--spacing-3) var(--spacing-4);
+    background-color: var(--color-background-surface);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .chatTextarea {
+    width: 100%;
+    min-height: 3rem;
+    max-height: 7.5rem;
+    resize: none;
+    box-sizing: border-box;
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-emphasized);
+    background-color: var(--color-background-card);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .chatTextarea::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.85;
+  }
+
+  .chatTextarea:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 22%, transparent);
+  }
+
+  /* Compact Summary Strip & Interactive Rows for History & Notifications */
+  .compactStatCard {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    transition:
+      transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 200ms ease,
+      box-shadow 200ms ease;
+  }
+
+  .compactStatCard:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-border-emphasized);
+  }
+
+  .missiveRowUnread {
+    background-color: color-mix(in srgb, var(--color-accent) 7%, transparent);
+    box-shadow: inset 3px 0 0 0 var(--color-accent);
+  }
+
+  .clickableRow {
+    cursor: pointer;
+    transition: background-color 160ms ease;
+  }
+
+  .clickableRow:hover {
+    background-color: var(--color-overlay-hover);
+  }
+
+  .historySearchWrap {
+    min-width: 15rem;
+    flex: 0 1 19rem;
+  }
+
+  /* Contained Scrollable Lists for Order History & Notifications */
+  .scrollablePanelBody {
+    max-height: min(58dvh, 35rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .scrollableTableWrap thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: var(--color-background-card);
+    box-shadow: 0 1px 0 var(--color-border);
+  }
+
+  .scrollFooterBar {
+    padding: var(--spacing-2) var(--spacing-4);
+    border-top: 1px solid var(--color-border);
+    background-color: color-mix(in srgb, var(--color-background-muted) 45%, transparent);
   }
 
   .hiddenInput {

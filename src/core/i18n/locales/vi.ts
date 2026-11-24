@@ -262,6 +262,14 @@ export const vi: TranslationSchema = {
     statTotalOrders: 'TỔNG ĐƠN HÀNG',
     statCompletedGems: 'GEM ĐÃ NHẬN',
     statPendingOrders: 'ĐƠN ĐANG CHỜ',
+    searchPlaceholder: 'Tìm nhanh theo mã đơn (TXN-...)',
+    copyOrderId: 'Sao chép mã đơn',
+    orderIdCopied: 'Đã sao chép mã TXN-{orderCode}.',
+    viewDetails: 'Chi tiết',
+    orderDetailsTitle: 'Chi Tiết Đơn Hàng',
+    orderDetailsSubtitle: 'Thông tin đầy đủ của giao dịch trên tài khoản Pactkeeper.',
+    showingCount: 'Đang hiển thị {count} đơn hàng',
+    scrollHint: 'Cuộn trong khung để xem thêm',
   },
   missives: {
     title: 'Thông Báo',
@@ -289,6 +297,15 @@ export const vi: TranslationSchema = {
     noMissivesTitle: 'Chưa Có Thông Báo Nào',
     noMissivesDesc:
       'Các xác nhận thanh toán, thông báo hệ thống và phản hồi hỗ trợ sẽ hiển thị tại đây theo thời gian thực.',
+    viewDetailAction: 'Xem chi tiết',
+    detailTitle: 'Chi Tiết Thông Báo',
+    detailCategory: 'Phân loại',
+    detailStatus: 'Trạng thái',
+    detailTime: 'Thời gian nhận',
+    detailMessage: 'Nội dung chi tiết',
+    contactSupportAction: 'Liên Hệ Hỗ Trợ',
+    showingCount: 'Đang hiển thị {count} thông báo',
+    scrollHint: 'Cuộn trong khung để xem thêm',
   },
   counsel: {
     title: 'Hỗ Trợ Trực Tuyến',
@@ -333,6 +350,14 @@ export const vi: TranslationSchema = {
     faq3A:
       'Hãy kiểm tra Lịch Sử Đơn Hàng trước. Nếu đã chuyển khoản nhưng đơn chưa hoàn tất, hãy nhấn "Chọn Mã Đơn" và đính kèm ảnh biên lai ngay tại khung chat này.',
     you: 'Bạn',
+    welcomeAutoMsg:
+      'Xin chào! Chào mừng bạn đến kênh Hỗ trợ Trực tuyến Pactkeeper. Bạn có thể mô tả vấn đề, gửi ảnh biên lai chuyển khoản hoặc chọn nhanh chủ đề bên dưới để được hỗ trợ ngay.',
+    quickTopicsLabel: 'Chủ Đề Nhanh',
+    quickTopic1: 'Tôi đã chuyển khoản VietQR nhưng chưa nhận được Gem',
+    quickTopic2: 'Nhờ kiểm tra giúp đơn hàng bị hủy / đang chờ của tôi',
+    quickTopic3: 'Thắc mắc về vật phẩm trong gói Tướng & Trang Bị',
+    recentOrdersSidebarTitle: 'Đơn Hàng Gần Đây (Nhấn Để Chèn Mã)',
+    enterToSendHint: 'Nhấn Enter để gửi · Shift+Enter để xuống dòng',
   },
   checkout: {
     title: 'Xác Nhận Thanh Toán',

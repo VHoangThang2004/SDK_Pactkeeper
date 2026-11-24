@@ -260,6 +260,14 @@ export const en = {
     statTotalOrders: 'TOTAL ORDERS',
     statCompletedGems: 'DELIVERED GEMS',
     statPendingOrders: 'ACTIVE PENDING',
+    searchPlaceholder: 'Search by Order ID (TXN-...)',
+    copyOrderId: 'Copy Order ID',
+    orderIdCopied: 'Copied TXN-{orderCode} to clipboard.',
+    viewDetails: 'Details',
+    orderDetailsTitle: 'Order Details',
+    orderDetailsSubtitle: 'Complete transaction summary for your Pactkeeper account.',
+    showingCount: 'Showing {count} orders',
+    scrollHint: 'Scroll inside list to view more',
   },
   missives: {
     title: 'Notifications',
@@ -287,6 +295,15 @@ export const en = {
     noMissivesTitle: 'No Notifications Yet',
     noMissivesDesc:
       'Payment confirmations, system notices, and support replies will appear here in real time.',
+    viewDetailAction: 'View Detail',
+    detailTitle: 'Notification Details',
+    detailCategory: 'Category',
+    detailStatus: 'Read Status',
+    detailTime: 'Received At',
+    detailMessage: 'Message Content',
+    contactSupportAction: 'Contact Support',
+    showingCount: 'Showing {count} notifications',
+    scrollHint: 'Scroll inside list to view more',
   },
   counsel: {
     title: 'Live Support',
@@ -331,6 +348,14 @@ export const en = {
     faq3A:
       'Check your Order History first. If still pending or failed after transfer, click "Attach Order ID" and upload your transfer receipt right here.',
     you: 'You',
+    welcomeAutoMsg:
+      'Hello! Welcome to Pactkeeper Live Support. Share your issue, attach a transfer screenshot, or pick a quick topic below so our team can assist you right away.',
+    quickTopicsLabel: 'Quick Topics',
+    quickTopic1: 'I paid via VietQR but have not received my Gems yet',
+    quickTopic2: 'Please help me check my cancelled / pending order',
+    quickTopic3: 'Question about Hero & Gear Bundle items',
+    recentOrdersSidebarTitle: 'Recent Orders (Click to Reference)',
+    enterToSendHint: 'Press Enter to send · Shift+Enter for new line',
   },
   checkout: {
     title: 'Checkout',
